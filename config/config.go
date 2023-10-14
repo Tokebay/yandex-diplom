@@ -13,25 +13,28 @@ type Config struct {
 }
 
 func NewConfig() *Config {
-	return &Config{
-		RunAddress:        getEnv("RUN_ADDRESS", ":8080"),
-		DatabaseURI:       getEnv("DATABASE_URI", "postgresql://username:password@localhost:5432/dbname"),
-		AccrualSystemAddr: getEnv("ACCRUAL_SYSTEM_ADDRESS", "http://localhost:8000"),
-	}
-}
+	cfg := &Config{}
+	flag.StringVar(&cfg.RunAddress, "a", "", "address and port to run the service")
+	flag.StringVar(&cfg.DatabaseURI, "d", "", "database connection URI")
+	flag.StringVar(&cfg.AccrualSystemAddr, "r", "", "address of the accrual system")
 
-func getEnv(key, fallbackValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return fallbackValue
-}
-
-func ParseFlags(cfg *Config) {
-	flag.StringVar(&cfg.RunAddress, "a", cfg.RunAddress, "address and port to run the service")
-	flag.StringVar(&cfg.DatabaseURI, "d", cfg.DatabaseURI, "database connection URI")
-	flag.StringVar(&cfg.AccrualSystemAddr, "r", cfg.AccrualSystemAddr, "address of the accrual system")
 	flag.Parse()
+
+	cfg.parseEnv()
+
+	return cfg
+}
+
+func (c *Config) parseEnv() {
+	if envRunAddress := os.Getenv("RUN_ADDRESS"); envRunAddress != "" {
+		c.RunAddress = envRunAddress
+	}
+	if envDatabaseURI := os.Getenv("DATABASE_URI"); envDatabaseURI != "" {
+		c.DatabaseURI = envDatabaseURI
+	}
+	if envAccrualSystemAddr := os.Getenv("ACCRUAL_SYSTEM_ADDRESS"); envAccrualSystemAddr != "" {
+		c.AccrualSystemAddr = envAccrualSystemAddr
+	}
 }
 
 func PrintUsage() {

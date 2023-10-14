@@ -4,7 +4,10 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/Tokebay/yandex-diplom/api/logger"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	goose "github.com/pressly/goose/v3"
+	"go.uber.org/zap"
 )
 
 var ErrUserNotFound = errors.New("user not found")
@@ -27,12 +30,12 @@ func NewPostgreSQL(dsn string) (*PostgreStorage, error) {
 	// миграции
 	db, err := goose.OpenDBWithDriver("pgx", dsn)
 	if err != nil {
-		// logger.Log.Error("Error open conn", zap.Error(err))
+		logger.Log.Error("Error open conn", zap.Error(err))
 		return nil, err
 	}
-	err = goose.Up(db, "./migration")
+	err = goose.Up(db, "./migrations")
 	if err != nil {
-		// logger.Log.Error("Error goose UP", zap.Error(err))
+		logger.Log.Error("Error goose UP", zap.Error(err))
 		return nil, err
 	}
 
