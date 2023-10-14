@@ -9,6 +9,7 @@ import (
 	"github.com/Tokebay/yandex-diplom/config"
 	"github.com/Tokebay/yandex-diplom/database"
 	"github.com/go-chi/chi/v5"
+
 	"go.uber.org/zap"
 )
 

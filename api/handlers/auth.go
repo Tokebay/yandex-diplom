@@ -2,11 +2,22 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/Tokebay/yandex-diplom/api/logger"
+	"github.com/Tokebay/yandex-diplom/database"
 	db "github.com/Tokebay/yandex-diplom/database"
 	"github.com/Tokebay/yandex-diplom/domain/models"
+	"github.com/go-playground/validator/v10"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 )
+
+// валидация структуры запроса
+var validate = validator.New()
 
 type UserHandler struct {
 	userRepository db.UserRepository
@@ -19,49 +30,101 @@ func NewUserHandler(userRepository db.UserRepository) *UserHandler {
 }
 
 func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
 	var user models.User
+	user.CreatedAt = time.Now()
+
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
 
-	// Проверка на уникальность логина и сохранение пользователя в базу данных
-	err = h.userRepository.CreateUser(user.Login, user.Password)
-	if err != nil {
-		http.Error(w, "Failed to register user", http.StatusInternalServerError)
+	// Проверка формата запроса
+	if err := validate.Struct(user); err != nil {
+		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
 
-	// tokenString, err := service.GenerateToken(userID, tokenTTL, yourSecretKey)
-	// if err != nil {
-	// 	// Обработка ошибки
-	// 	return
-	// }
-	// В случае успешной регистрации, автоматическая аутентификация пользователя
+	// хэшируем пароль
+	user.Password = getHash([]byte(user.Password))
 
-	// Отправка успешного ответа
+	// Проверяю на уникальность логина и если ок, то сохраняю в БД
+	login, err := h.userRepository.CreateUser(user)
+	fmt.Printf("create login %s \n", login)
+	if err != nil && login == "" {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
 	w.WriteHeader(http.StatusOK)
 }
 
+func getHash(pwd []byte) string {
+	hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.MinCost)
+	if err != nil {
+		logger.Log.Error("Error while hash password", zap.Error(err))
+	}
+	return string(hash)
+}
+
 func (h *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	var user models.User
-	err := json.NewDecoder(r.Body).Decode(&user)
+	defer r.Body.Close()
+
+	var credentials struct {
+		Login    string `json:"login" validate:"required,gte=2"`
+		Password string `json:"password" validate:"required,gte=4"`
+	}
+
+	// Чтение данных аутентификации из тела запроса
+	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
 		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
 
-	// Проверка логина и пароля в базе данных
-	// fetchedUser, err := h.userRepository.GetUserByLogin(user.Login, user.Password)
-	// if err != nil {
-	// 	http.Error(w, "Invalid login or password", http.StatusUnauthorized)
-	// 	return
-	// }
+	// Проверка формата запроса
+	if err := validate.Struct(credentials); err != nil {
+		http.Error(w, "Invalid request format", http.StatusBadRequest)
+		return
+	}
 
-	// Проверка пароля
+	// Проверка логина и пароля в БД
+	user, err := h.userRepository.GetUser(credentials.Login)
+	if err != nil {
+		if errors.Is(err, database.ErrUserNotFound) {
+			logger.Log.Error("Error find user", zap.Error(err))
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+		http.Error(w, "Invalid login or password", http.StatusUnauthorized)
+		return
+	}
 
-	// В случае успешной аутентификации, генерация токена и отправка его пользователю
+	// Проверка пароля пользователя
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password))
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		http.Error(w, "Invalid login or password", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := BuildJWTString(user.Login)
+	// fmt.Printf("%s", token)
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
+	// В случае успешной аутентификации установки токена в куки
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		HttpOnly: true,
+		Expires:  time.Now().Add(time.Hour),
+	})
 
 	// Отправка успешного ответа
 	w.WriteHeader(http.StatusOK)
