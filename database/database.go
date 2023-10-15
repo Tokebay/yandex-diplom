@@ -64,16 +64,13 @@ func (p *PostgreStorage) CreateUser(user models.User) (string, error) {
 		return "", err
 	}
 
-	if err != nil {
-		if err == pgx.ErrNoRows { // если ON CONFLICT не сработал и ни одна строка не вернулась
-			fmt.Println("rowsAffected 0")
-			return "", ErrAlreadyUserExist
-		}
-		logger.Log.Error("Error insert URL to table", zap.Error(err))
-		return "", err
+	if err == pgx.ErrNoRows { // если ON CONFLICT не сработал и ни одна строка не вернулась
+		fmt.Println("rowsAffected 0")
+		return "", ErrAlreadyUserExist
 	}
 
 	return login, nil
+
 }
 
 func (p *PostgreStorage) GetUser(login string) (*models.User, error) {
