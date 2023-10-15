@@ -35,7 +35,8 @@ func run() error {
 
 	// Инициализ хэндлеров с передачей соед с бд
 	userHandler := handlers.NewUserHandler(db)
-	r := createRouter(cfg, userHandler)
+	orderHandler := handlers.NewOrderHandler(db)
+	r := createRouter(cfg, userHandler, orderHandler)
 
 	// Запуск HTTP сервера
 	http.ListenAndServe(cfg.RunAddress, r)
@@ -43,7 +44,7 @@ func run() error {
 	return nil
 }
 
-func createRouter(cfg *config.Config, userHandler *handlers.UserHandler) chi.Router {
+func createRouter(cfg *config.Config, userHandler *handlers.UserHandler, orderHandler *handlers.OrderHandler) chi.Router {
 	// Создание роутера Chi
 	r := chi.NewRouter()
 
@@ -52,6 +53,7 @@ func createRouter(cfg *config.Config, userHandler *handlers.UserHandler) chi.Rou
 
 	r.Post("/api/user/register", userHandler.RegisterHandler)
 	r.Post("/api/user/login", userHandler.LoginHandler)
+	r.Post("/api/user/orders", orderHandler.UploadOrderHandler)
 
 	return r
 }

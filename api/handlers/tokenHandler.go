@@ -21,28 +21,28 @@ var ErrSignTokenString = errors.New("error create token string")
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID string
+	UserID int
 }
 
-func GetUserCookie(r *http.Request) (string, error) {
+func GetUserCookie(r *http.Request) (int, error) {
 	cookie, err := r.Cookie(CookieName)
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
-			return "", nil
+			return -1, nil
 		}
 		logger.Log.Error("GetUserCookie. error get cookie", zap.Error(err))
-		return "", err
+		return -1, err
 	}
 
 	userID, err := ExtractUserIDFromToken(cookie.Value)
 	if err != nil {
-		return "", fmt.Errorf("error get userID: %w", err)
+		return -1, fmt.Errorf("error get userID: %w", err)
 	}
 
 	return userID, nil
 }
 
-func ExtractUserIDFromToken(tokenString string) (string, error) {
+func ExtractUserIDFromToken(tokenString string) (int, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -52,17 +52,17 @@ func ExtractUserIDFromToken(tokenString string) (string, error) {
 		return []byte(SecretKey), nil
 	})
 	if err != nil {
-		return "", ErrParseClaims
+		return -1, ErrParseClaims
 	}
 
 	if !token.Valid {
-		return "", ErrToken
+		return -1, ErrToken
 	}
 
 	return claims.UserID, nil
 }
 
-func BuildJWTString(userID string) (string, error) {
+func BuildJWTString(userID int) (string, error) {
 	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{

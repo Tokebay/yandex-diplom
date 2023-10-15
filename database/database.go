@@ -16,9 +16,18 @@ import (
 var ErrUserNotFound = errors.New("user not found")
 var ErrAlreadyUserExist = errors.New("user already exist")
 
+var ErrOrderExistsForUser = errors.New("order already exists for the user")
+var ErrOrderExists = errors.New("order already exists")
+
 type UserRepository interface {
 	CreateUser(user models.User) (string, error)
 	GetUser(login string) (*models.User, error)
+}
+
+type OrderRepository interface {
+	OrderExists(userID int, orderID string) (bool, error)
+	OrderExistsByNumber(orderID string) (bool, error)
+	UploadOrder(order models.Order) error
 }
 
 type PostgreStorage struct {
@@ -79,4 +88,39 @@ func (p *PostgreStorage) GetUser(login string) (*models.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (p *PostgreStorage) OrderExists(userID int, orderNumber string) (bool, error) {
+	fmt.Println("OrderExists")
+	var exists bool
+	err := p.db.QueryRow("SELECT EXISTS(SELECT 1 FROM orders WHERE user_id = $1 AND order_id = $2)", userID, orderNumber).Scan(&exists)
+	if err != nil {
+		logger.Log.Error("Order exist", zap.Error(err))
+		return false, ErrOrderExistsForUser
+	}
+	return exists, nil
+}
+
+func (p *PostgreStorage) OrderExistsByNumber(orderNumber string) (bool, error) {
+	fmt.Println("OrderExistsByNumber")
+	var exists bool
+	err := p.db.QueryRow("SELECT EXISTS(SELECT 1 FROM orders WHERE order_id = $1)", orderNumber).Scan(&exists)
+	if err != nil {
+		logger.Log.Error("Order exist By number", zap.Error(err))
+		return false, ErrOrderExists
+	}
+	return exists, nil
+}
+
+func (p *PostgreStorage) UploadOrder(order models.Order) error {
+	fmt.Println("UploadOrder")
+
+	// Insert нового заказа
+	_, err := p.db.Exec("INSERT INTO orders (user_id, order_id, status, created_at) VALUES ($1, $2, $3, $4)",
+		order.UserID, order.Number, order.Status, order.CreatedAt)
+	if err != nil {
+		logger.Log.Error("Error inserting order into orders table", zap.Error(err))
+		return err
+	}
+	return nil
 }

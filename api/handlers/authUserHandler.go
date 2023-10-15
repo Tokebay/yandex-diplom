@@ -9,7 +9,7 @@ import (
 
 	"github.com/Tokebay/yandex-diplom/api/logger"
 	"github.com/Tokebay/yandex-diplom/database"
-	db "github.com/Tokebay/yandex-diplom/database"
+
 	"github.com/Tokebay/yandex-diplom/domain/models"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
@@ -20,10 +20,10 @@ import (
 var validate = validator.New()
 
 type UserHandler struct {
-	userRepository db.UserRepository
+	userRepository database.UserRepository
 }
 
-func NewUserHandler(userRepository db.UserRepository) *UserHandler {
+func NewUserHandler(userRepository database.UserRepository) *UserHandler {
 	return &UserHandler{
 		userRepository: userRepository,
 	}
@@ -111,7 +111,7 @@ func (h *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := BuildJWTString(user.Login)
+	token, err := BuildJWTString(user.ID)
 	// fmt.Printf("%s", token)
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
