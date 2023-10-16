@@ -24,7 +24,7 @@ func NewOrderHandler(orderRepository database.OrderRepository) *OrderHandler {
 }
 
 func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+	//defer r.Body.Close()
 	fmt.Println("UploadOrderHandler")
 
 	// Получил userID из куки

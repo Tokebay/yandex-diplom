@@ -22,7 +22,10 @@ func main() {
 
 func run() error {
 	//Инициализируется логгер
-	logger.Initialize("info")
+	err := logger.Initialize("info")
+	if err != nil {
+		logger.Log.Error("Error init logger", zap.Error(err))
+	}
 
 	cfg := config.NewConfig()
 

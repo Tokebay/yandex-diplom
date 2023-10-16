@@ -20,7 +20,7 @@ var ErrOrderExistsForUser = errors.New("order already exists for the user")
 var ErrOrderExists = errors.New("order already exists")
 
 type UserRepository interface {
-	CreateUser(user models.User) (string, error)
+	CreateUser(user models.User) (string, int, error)
 	GetUser(login string) (*models.User, error)
 }
 
@@ -55,22 +55,20 @@ func NewPostgreSQL(dsn string) (*PostgreStorage, error) {
 	return &PostgreStorage{db: db}, nil
 }
 
-func (p *PostgreStorage) CreateUser(user models.User) (string, error) {
-
+func (p *PostgreStorage) CreateUser(user models.User) (string, int, error) {
 	var login string
-	err := p.db.QueryRow("INSERT INTO users (login, password, created_at) values ($1, $2, $3) on conflict (login) do nothing RETURNING login", user.Login, user.Password, user.CreatedAt).Scan(&login)
+	var userID int
+	err := p.db.QueryRow("INSERT INTO users (login, password, created_at) values ($1, $2, $3) on conflict (login) do nothing RETURNING login, id", user.Login, user.Password, user.CreatedAt).Scan(&login, &userID)
 	if err != nil {
 		logger.Log.Error("Error creating user", zap.Error(err))
-		return "", err
+		if err == pgx.ErrNoRows { // если ON CONFLICT не сработал и ни одна строка не вернулась
+			fmt.Println("rowsAffected 0")
+			return "", 0, ErrAlreadyUserExist
+		}
+		return "", 0, err
 	}
 
-	if err == pgx.ErrNoRows { // если ON CONFLICT не сработал и ни одна строка не вернулась
-		fmt.Println("rowsAffected 0")
-		return "", ErrAlreadyUserExist
-	}
-
-	return login, nil
-
+	return login, userID, nil
 }
 
 func (p *PostgreStorage) GetUser(login string) (*models.User, error) {
@@ -111,7 +109,7 @@ func (p *PostgreStorage) OrderExistsByNumber(orderNumber string) (bool, error) {
 
 func (p *PostgreStorage) UploadOrder(order models.Order) error {
 	fmt.Println("UploadOrder")
-
+	fmt.Printf("%s %s %s %s \n", order.UserID, order.Number, order.Status, order.CreatedAt)
 	// Insert нового заказа
 	_, err := p.db.Exec("INSERT INTO orders (user_id, order_id, status, created_at) VALUES ($1, $2, $3, $4)",
 		order.UserID, order.Number, order.Status, order.CreatedAt)

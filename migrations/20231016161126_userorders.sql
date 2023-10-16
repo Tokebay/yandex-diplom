@@ -5,7 +5,7 @@ CREATE TABLE  IF NOT EXISTS orders (
     status VARCHAR(255) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     user_id integer REFERENCES users(id)
-);
+    );
 -- +goose StatementEnd
 
 -- +goose Down
