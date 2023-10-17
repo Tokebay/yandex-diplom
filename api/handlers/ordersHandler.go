@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -83,7 +85,41 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted) // Новый номер заказа принят в обработку
+	// Новый номер заказа принят в обработку
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) {
+	// Получение идентификатора пользователя из куки или токена
+	userID, err := GetUserCookie(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	fmt.Printf("GetOrdersHandler userID %d \n", userID)
+	// Получение списка заказов для пользователя из базы данных
+	orders, err := h.orderRepository.GetOrdersByUserID(userID)
+	if err != nil {
+		if errors.Is(err, database.ErrDataNotFound) {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	ordersResp, err := json.Marshal(orders)
+	if err != nil {
+		logger.Log.Error("Error get orders", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Отправка успешного ответа
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(ordersResp)
 }
 
 func isValidLuhnAlgorithmV2(number string) bool {
@@ -123,5 +159,4 @@ func isValidLuhnAlgorithmV2(number string) bool {
 	}
 
 	return sum%10 == 0
-
 }

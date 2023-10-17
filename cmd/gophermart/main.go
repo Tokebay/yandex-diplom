@@ -57,6 +57,7 @@ func createRouter(cfg *config.Config, userHandler *handlers.UserHandler, orderHa
 	r.Post("/api/user/register", userHandler.RegisterHandler)
 	r.Post("/api/user/login", userHandler.LoginHandler)
 	r.Post("/api/user/orders", orderHandler.UploadOrderHandler)
+	r.Get("/api/user/orders", orderHandler.GetOrdersHandler)
 
 	return r
 }

@@ -89,21 +89,13 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	// Получил userID из куки
-	userID, err := GetUserCookie(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-	fmt.Printf("UserID %s \n", userID)
-
 	var credentials struct {
 		Login    string `json:"login" validate:"required,gte=2"`
 		Password string `json:"password" validate:"required,gte=4"`
 	}
 
 	// Чтение данных аутентификации из тела запроса
-	err = json.NewDecoder(r.Body).Decode(&credentials)
+	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
 		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		logger.Log.Error("Error decoding JSON", zap.Error(err))
@@ -133,6 +125,28 @@ func (h *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid login or password", http.StatusUnauthorized)
 		logger.Log.Error("Invalid login or password", zap.Error(err))
 		return
+	}
+
+	// Получил userID из куки
+	userID, err := GetUserCookie(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	var token string
+	if userID == -1 {
+		token, err = BuildJWTString(user.ID)
+		fmt.Printf("RegisterHandler userID %d", user.ID)
+		if err != nil {
+			http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    token,
+			HttpOnly: true,
+			Expires:  time.Now().Add(time.Hour),
+		})
 	}
 
 	// Отправка успешного ответа
