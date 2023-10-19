@@ -89,6 +89,7 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusAccepted)
 }
 
+// GetOrdersHandler Номера заказа в выдаче отсортированы по времени загрузки от самых старых к самым новым. Формат даты — RFC3339.
 func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) {
 	// Извлечение идентификатора пользователя из контекста запроса
 	userID, ok := r.Context().Value("userID").(int)
@@ -96,7 +97,7 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	fmt.Printf("GetOrdersHandler. userID %d \n", userID)
+
 	// Получение списка заказов для пользователя из базы данных
 	orders, err := h.orderRepository.GetOrdersByUserID(userID)
 	if err != nil {
@@ -105,7 +106,7 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		logger.Log.Error("Error getting orders", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 

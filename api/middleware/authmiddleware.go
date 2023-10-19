@@ -10,6 +10,10 @@ import (
 
 var ErrUnauthorized = errors.New("unauthorized")
 
+type contextKey string
+
+const userIDKey contextKey = "userID"
+
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID, err := handlers.GetUserCookie(r)
@@ -32,7 +36,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Устанавливаем userID в контексте запроса
-		ctx := context.WithValue(r.Context(), "userID", userID)
+		ctx := context.WithValue(r.Context(), userIDKey, userID)
 		r = r.WithContext(ctx)
 
 		// Прошло проверку, передаем запрос следующему обработчику
