@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Tokebay/yandex-diplom/api/middleware"
+
 	"github.com/Tokebay/yandex-diplom/api/handlers"
 	"github.com/Tokebay/yandex-diplom/api/logger"
 	"github.com/Tokebay/yandex-diplom/config"
@@ -20,6 +22,12 @@ func main() {
 
 }
 
+type App struct {
+	UserHandler    *handlers.UserHandler
+	OrderHandler   *handlers.OrderHandler
+	BalanceHandler *handlers.BalanceHandler
+}
+
 func run() error {
 	//Инициализируется логгер
 	err := logger.Initialize("info")
@@ -32,14 +40,21 @@ func run() error {
 	// Подключение к базе данных
 	db, err := database.NewPostgreSQL(cfg.DatabaseURI)
 	if err != nil {
-		logger.Log.Error("Error in NewPostgreSQLStorage", zap.Error(err))
+		logger.Log.Error("Error with connection to DB", zap.Error(err))
 		return err
 	}
 
 	// Инициализ хэндлеров с передачей соед с бд
 	userHandler := handlers.NewUserHandler(db)
 	orderHandler := handlers.NewOrderHandler(db)
-	r := createRouter(cfg, userHandler, orderHandler)
+	balanceHandler := handlers.NewBalanceHandler(db)
+	app := &App{
+		UserHandler:    userHandler,
+		OrderHandler:   orderHandler,
+		BalanceHandler: balanceHandler,
+	}
+
+	r := createRouter(cfg, app)
 
 	// Запуск HTTP сервера
 	http.ListenAndServe(cfg.RunAddress, r)
@@ -47,17 +62,17 @@ func run() error {
 	return nil
 }
 
-func createRouter(cfg *config.Config, userHandler *handlers.UserHandler, orderHandler *handlers.OrderHandler) chi.Router {
+func createRouter(cfg *config.Config, app *App) chi.Router {
 	// Создание роутера Chi
 	r := chi.NewRouter()
 
 	// Middleware для логирования запросов
 	r.Use(logger.LoggerMiddleware)
+	r.Post("/api/user/register", app.UserHandler.RegisterHandler)
+	r.Post("/api/user/login", app.UserHandler.LoginHandler)
 
-	r.Post("/api/user/register", userHandler.RegisterHandler)
-	r.Post("/api/user/login", userHandler.LoginHandler)
-	r.Post("/api/user/orders", orderHandler.UploadOrderHandler)
-	r.Get("/api/user/orders", orderHandler.GetOrdersHandler)
-
+	r.With(middleware.AuthMiddleware).Post("/api/user/orders", app.OrderHandler.UploadOrderHandler)
+	r.With(middleware.AuthMiddleware).Get("/api/user/orders", app.OrderHandler.GetOrdersHandler)
+	r.With(middleware.AuthMiddleware).Get("/api/user/balance", app.BalanceHandler.GetBalanceHandler)
 	return r
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -29,24 +28,16 @@ func NewUserHandler(userRepository database.UserRepository) *UserHandler {
 		userRepository: userRepository,
 	}
 }
-
 func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		logger.Log.Error("Read bytes", zap.Error(err))
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	var user models.User
-	user.CreatedAt = time.Now()
 
-	if err := json.Unmarshal(data, &user); err != nil {
-		logger.Log.Error("Unmarshal json", zap.Error(err))
-		w.WriteHeader(http.StatusBadRequest)
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
+
+	user.CreatedAt = time.Now()
 
 	// Проверка формата запроса
 	if err := validate.Struct(user); err != nil {
@@ -54,36 +45,34 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// хэшируем пароль
+	// Хэшируем пароль
 	user.Password = getHash([]byte(user.Password))
 
-	// Проверяю на уникальность логина и если ок, то сохраняю в БД
+	// Создаем пользователя в репозитории
 	login, userID, err := h.userRepository.CreateUser(user)
 	if err != nil && login == "" {
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
+	// Генерируем JWT токен
 	token, err := BuildJWTString(userID)
-	fmt.Printf("RegisterHandler userID %d", userID)
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
 
-	// В случае успешной аутентификации установки токена в куки
+	// Устанавливаем токен в куки
 	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
+		Name:     CookieName,
 		Value:    token,
 		HttpOnly: true,
-		Expires:  time.Now().Add(time.Hour),
+		Expires:  time.Now().Add(TokenExp),
 	})
-
+	
 	w.Header().Set("Content-Type", "application/json")
-
 	w.WriteHeader(http.StatusOK)
 
-	//h.LoginHandler(w, r)
 }
 
 func (h *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {

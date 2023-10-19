@@ -90,13 +90,13 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) {
-	// Получение идентификатора пользователя из куки или токена
-	userID, err := GetUserCookie(r)
-	if err != nil {
+	// Извлечение идентификатора пользователя из контекста запроса
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	fmt.Printf("GetOrdersHandler userID %d \n", userID)
+	fmt.Printf("GetOrdersHandler. userID %d \n", userID)
 	// Получение списка заказов для пользователя из базы данных
 	orders, err := h.orderRepository.GetOrdersByUserID(userID)
 	if err != nil {
@@ -104,15 +104,16 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+		logger.Log.Error("Error getting orders", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	// Преобразование списка заказов в JSON
 	ordersResp, err := json.Marshal(orders)
 	if err != nil {
-		logger.Log.Error("Error get orders", zap.Error(err))
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Log.Error("Error marshaling JSON", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
