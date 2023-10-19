@@ -15,6 +15,9 @@ import (
 	"go.uber.org/zap"
 )
 
+var ErrUnauthorized = errors.New("user not auth")
+var ErrNoContent = errors.New("no content")
+
 type OrderHandler struct {
 	orderRepository database.OrderRepository
 }
@@ -93,23 +96,37 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetOrdersHandler")
 
-	userID, err := GetUserCookie(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	// Получение списка заказов для пользователя из базы данных
-	orders, err := h.orderRepository.GetOrdersByUserID(userID)
+	_, orders, err := getUserIDAndOrders(r, h)
 	if err != nil {
 		if errors.Is(err, database.ErrDataNotFound) {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+		if errors.Is(err, ErrUnauthorized) {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
 		logger.Log.Error("Error getting orders", zap.Error(err))
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	//userID, err := GetUserCookie(r)
+	//if err != nil {
+	//	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	//	return
+	//}
+	//
+	//// Получение списка заказов для пользователя из базы данных
+	//orders, err := h.orderRepository.GetOrdersByUserID(userID)
+	//if err != nil {
+	//	if errors.Is(err, database.ErrDataNotFound) {
+	//		w.WriteHeader(http.StatusNoContent)
+	//		return
+	//	}
+	//	logger.Log.Error("Error getting orders", zap.Error(err))
+	//	w.WriteHeader(http.StatusBadRequest)
+	//	return
+	//}
 
 	// Преобразование списка заказов в JSON
 	ordersResp, err := json.Marshal(orders)
@@ -123,6 +140,24 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(ordersResp)
+}
+
+func getUserIDAndOrders(r *http.Request, h *OrderHandler) (int, []models.OrderResponse, error) {
+	userID, err := GetUserCookie(r)
+	if userID == -1 {
+		return -1, nil, ErrUnauthorized
+	}
+	if err != nil {
+		return -1, nil, ErrNoContent
+	}
+
+	orders, err := h.orderRepository.GetOrdersByUserID(userID)
+	if err != nil {
+		logger.Log.Error("Error getting orders", zap.Error(err))
+		return userID, nil, err
+	}
+
+	return userID, orders, nil
 }
 
 func isValidLuhnAlgorithmV2(number string) bool {
