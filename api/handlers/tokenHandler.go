@@ -79,3 +79,13 @@ func BuildJWTString(userID int) (string, error) {
 
 	return tokenString, nil
 }
+
+// getTokenFromRequest получаем token из cookie.
+func GetTokenFromRequest(r *http.Request) (string, error) {
+	token, err := r.Cookie("token")
+	if err != nil {
+		return "", err
+
+	}
+	return token.Value, nil
+}

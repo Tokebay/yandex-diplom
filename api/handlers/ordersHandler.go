@@ -91,9 +91,10 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 
 // GetOrdersHandler Номера заказа в выдаче отсортированы по времени загрузки от самых старых к самым новым. Формат даты — RFC3339.
 func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) {
-	// Извлечение идентификатора пользователя из контекста запроса
-	userID, ok := r.Context().Value("userID").(int)
-	if !ok {
+	fmt.Println("GetOrdersHandler")
+
+	userID, err := GetUserCookie(r)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
