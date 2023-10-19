@@ -2,21 +2,16 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/Tokebay/yandex-diplom/api/handlers"
+	"github.com/Tokebay/yandex-diplom/domain/models"
 )
-
-var ErrUnauthorized = errors.New("unauthorized")
-
-type contextKey string
-
-const userIDKey contextKey = "userID"
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("AuthMiddleware")
 		// Проверка токена
 		cookie, err := r.Cookie(handlers.CookieName)
 		if err != nil {
@@ -42,7 +37,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		//}
 
 		// Устанавливаем userID в контексте запроса
-		ctx := context.WithValue(r.Context(), userIDKey, userID)
+		ctx := context.WithValue(r.Context(), models.UserIDKey, userID)
 		r = r.WithContext(ctx)
 
 		// Прошло проверку, передаем запрос следующему обработчику

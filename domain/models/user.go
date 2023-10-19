@@ -2,6 +2,10 @@ package models
 
 import "time"
 
+type contextKey string
+
+const UserIDKey contextKey = "userID"
+
 type User struct {
 	ID        int       `json:"id"`
 	Login     string    `json:"login" validate:"required,gte=2"`

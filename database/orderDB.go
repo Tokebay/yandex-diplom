@@ -16,7 +16,7 @@ type OrderRepository interface {
 	OrderExists(userID int, orderID string) (bool, error)
 	OrderExistsByNumber(orderID string) (bool, error)
 	UploadOrder(order models.Order) error
-	GetOrdersByUserID(useID int) ([]models.OrderResponse, error)
+	GetOrdersByUserID(userID int) ([]models.OrderResponse, error)
 }
 
 func (p *PostgreStorage) OrderExists(userID int, orderNumber string) (bool, error) {
@@ -45,8 +45,8 @@ func (p *PostgreStorage) UploadOrder(order models.Order) error {
 	fmt.Println("UploadOrder")
 	//fmt.Printf("%d %s %s %s \n", order.UserID, order.Number, order.Status, order.CreatedAt)
 	// Insert нового заказа
-	_, err := p.db.Exec("INSERT INTO orders (user_id, order_id, status, uploaded_at) VALUES ($1, $2, $3, $4)",
-		order.UserID, order.Number, order.Status, order.CreatedAt)
+	_, err := p.db.Exec("INSERT INTO orders (user_id, order_id, status, uploaded_at, accrual) VALUES ($1, $2, $3, $4, $5)",
+		order.UserID, order.Number, order.Status, order.CreatedAt, order.Accrual)
 	if err != nil {
 		logger.Log.Error("Error inserting order into orders table", zap.Error(err))
 		return err
@@ -71,9 +71,9 @@ func (p *PostgreStorage) GetOrdersByUserID(userID int) ([]models.OrderResponse, 
 			logger.Log.Error("Error scan orders table", zap.Error(err))
 			return nil, err
 		}
+
 		orders = append(orders, order)
 	}
-
 	err = rows.Err()
 	if err != nil {
 		logger.Log.Error("Error get orders", zap.Error(err))

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,7 +17,8 @@ import (
 )
 
 var ErrUnauthorized = errors.New("user not auth")
-var ErrNoContent = errors.New("no content")
+
+//var ErrNoContent = errors.New("no content")
 
 type OrderHandler struct {
 	orderRepository database.OrderRepository
@@ -78,6 +80,7 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 		Number:    string(orderNumber),
 		Status:    models.OrderStatusNew,
 		CreatedAt: time.Now().Format(time.RFC3339),
+		Accrual:   0,
 		UserID:    userID,
 	}
 
@@ -96,16 +99,20 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetOrdersHandler")
 
-	_, orders, err := getUserIDAndOrders(r, h)
+	orders, err := getOrders(r.Context(), h)
 	if err != nil {
 		if errors.Is(err, database.ErrDataNotFound) {
+			logger.Log.Error("Error No Content", zap.Error(err))
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+
 		if errors.Is(err, ErrUnauthorized) {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			logger.Log.Error("Error Unauthorized", zap.Error(err))
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+
 		logger.Log.Error("Error getting orders", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -142,22 +149,20 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 	w.Write(ordersResp)
 }
 
-func getUserIDAndOrders(r *http.Request, h *OrderHandler) (int, []models.OrderResponse, error) {
-	userID, err := GetUserCookie(r)
-	if userID == -1 {
-		return -1, nil, ErrUnauthorized
-	}
-	if err != nil {
-		return -1, nil, ErrNoContent
+func getOrders(ctx context.Context, h *OrderHandler) ([]models.OrderResponse, error) {
+	userID, ok := ctx.Value(models.UserIDKey).(int)
+	fmt.Printf("getOrders. userID %d \n", userID)
+	if !ok {
+		return nil, errors.New("incorrect user id")
 	}
 
 	orders, err := h.orderRepository.GetOrdersByUserID(userID)
 	if err != nil {
 		logger.Log.Error("Error getting orders", zap.Error(err))
-		return userID, nil, err
+		return nil, err
 	}
 
-	return userID, orders, nil
+	return orders, nil
 }
 
 func isValidLuhnAlgorithmV2(number string) bool {
