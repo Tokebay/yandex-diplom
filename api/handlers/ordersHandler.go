@@ -37,14 +37,14 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 	// Получил userID из куки
 	userID, err := GetUserCookie(r)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	// получил номера заказа из тела запроса
 	orderNumber, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Invalid request format", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 		logger.Log.Error("Error order uploaded by another", zap.Error(err))
 	}
 	if isOrderUploaded {
-		http.Error(w, "Order number already uploaded by another user", http.StatusConflict)
+		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
@@ -88,7 +88,7 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 	// Сохраняю номера заказа в БД со статусом  - NEW
 	err = h.orderRepository.UploadOrder(order)
 	if err != nil {
-		http.Error(w, "Failed to upload order", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -100,41 +100,41 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetOrdersHandler")
 
-	orders, err := getOrders(r.Context(), h)
-	if err != nil {
-		if errors.Is(err, database.ErrDataNotFound) {
-			logger.Log.Error("Error No Content", zap.Error(err))
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		if errors.Is(err, ErrUnauthorized) {
-			logger.Log.Error("Error Unauthorized", zap.Error(err))
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		logger.Log.Error("Error getting orders", zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	//userID, err := GetUserCookie(r)
-	//if err != nil {
-	//	http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	//	return
-	//}
-	//
-	// Получение списка заказов для пользователя из базы данных
-	//orders, err = h.orderRepository.GetOrdersByUserID(userID)
+	//orders, err := getOrders(r.Context(), h)
 	//if err != nil {
 	//	if errors.Is(err, database.ErrDataNotFound) {
+	//		logger.Log.Error("Error No Content", zap.Error(err))
 	//		w.WriteHeader(http.StatusNoContent)
 	//		return
 	//	}
+	//
+	//	if errors.Is(err, ErrUnauthorized) {
+	//		logger.Log.Error("Error Unauthorized", zap.Error(err))
+	//		w.WriteHeader(http.StatusUnauthorized)
+	//		return
+	//	}
+	//
 	//	logger.Log.Error("Error getting orders", zap.Error(err))
-	//	w.WriteHeader(http.StatusBadRequest)
+	//	w.WriteHeader(http.StatusInternalServerError)
 	//	return
 	//}
+	userID, err := GetUserCookie(r)
+	if err != nil && userID == -1 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	//Получение списка заказов для пользователя из базы данных
+	orders, err := h.orderRepository.GetOrdersByUserID(userID)
+	if err != nil {
+		if errors.Is(err, database.ErrDataNotFound) {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		logger.Log.Error("Error getting orders", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	// Преобразование списка заказов в JSON
 	ordersResp, err := json.Marshal(orders)
