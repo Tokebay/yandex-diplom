@@ -31,7 +31,7 @@ func NewOrderHandler(orderRepository database.OrderRepository) *OrderHandler {
 }
 
 func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request) {
-	//defer r.Body.Close()
+	defer r.Body.Close()
 	fmt.Println("UploadOrderHandler")
 
 	// Получил userID из куки
@@ -50,9 +50,9 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 
 	fmt.Printf("orderNumber %s; userID %d \n", orderNumber, userID)
 
-	// Проверка формата номера заказа с использованием алгоритма Луна
-	if !isValidLuhnAlgorithmV2(string(orderNumber)) {
-		http.Error(w, "Invalid order number format", http.StatusUnprocessableEntity)
+	isValidOrder := isValidLuhnAlgorithm(string(orderNumber))
+	if !isValidOrder {
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -61,6 +61,7 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		logger.Log.Error("Error order exist", zap.Error(err))
 	}
+
 	if isOrderExist {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -123,8 +124,8 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 	//	return
 	//}
 	//
-	//// Получение списка заказов для пользователя из базы данных
-	//orders, err := h.orderRepository.GetOrdersByUserID(userID)
+	// Получение списка заказов для пользователя из базы данных
+	//orders, err = h.orderRepository.GetOrdersByUserID(userID)
 	//if err != nil {
 	//	if errors.Is(err, database.ErrDataNotFound) {
 	//		w.WriteHeader(http.StatusNoContent)
@@ -165,7 +166,7 @@ func getOrders(ctx context.Context, h *OrderHandler) ([]models.OrderResponse, er
 	return orders, nil
 }
 
-func isValidLuhnAlgorithmV2(number string) bool {
+func isValidLuhnAlgorithm(number string) bool {
 
 	// Проверка, что номер заказа состоит только из цифр
 	for _, char := range number {
