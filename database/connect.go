@@ -16,6 +16,15 @@ func (p *PostgreStorage) Close() error {
 	return p.db.Close()
 }
 
+func (p *PostgreStorage) Begin() (*sql.Tx, error) {
+	tx, err := p.db.Begin()
+	if err != nil {
+		logger.Log.Error("Error starting transaction", zap.Error(err))
+		return nil, err
+	}
+	return tx, nil
+}
+
 func NewPostgreSQL(dsn string) (*PostgreStorage, error) {
 	// миграции
 	db, err := goose.OpenDBWithDriver("pgx", dsn)

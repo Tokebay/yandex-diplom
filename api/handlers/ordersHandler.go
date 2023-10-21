@@ -16,10 +16,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var ErrUnauthorized = errors.New("user not auth")
-
-//var ErrNoContent = errors.New("no content")
-
 type OrderHandler struct {
 	orderRepository database.OrderRepository
 }
@@ -78,11 +74,11 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	order := models.Order{
-		Number:    string(orderNumber),
-		Status:    models.OrderStatusNew,
-		CreatedAt: time.Now().Format(time.RFC3339),
-		Accrual:   0,
-		UserID:    userID,
+		Number:     string(orderNumber),
+		Status:     models.OrderStatusNew,
+		UploadedAt: time.Now().Format(time.RFC3339),
+		Accrual:    0,
+		UserID:     userID,
 	}
 
 	// Сохраняю номера заказа в БД со статусом  - NEW
@@ -151,7 +147,7 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func getOrders(ctx context.Context, h *OrderHandler) ([]models.OrderResponse, error) {
-	userID, ok := ctx.Value(models.UserIDKey).(int)
+	userID, ok := ctx.Value(models.UserIDKey).(int64)
 	fmt.Printf("getOrders. userID %d \n", userID)
 	if !ok {
 		return nil, errors.New("incorrect user id")

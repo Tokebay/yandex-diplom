@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -56,8 +57,19 @@ func run() error {
 
 	r := createRouter(cfg, app)
 
-	// Запуск HTTP сервера
-	http.ListenAndServe(cfg.RunAddress, r)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Запуск HTTP сервера с контекстом
+	go func() {
+		err := http.ListenAndServe(cfg.RunAddress, r)
+		if err != nil {
+			logger.Log.Fatal("Error starting HTTP server", zap.Error(err))
+			cancel() // Отменяем контекст при ошибке
+		}
+	}()
+	
+	<-ctx.Done()
 
 	return nil
 }

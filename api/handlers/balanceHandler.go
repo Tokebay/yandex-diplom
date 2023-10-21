@@ -64,3 +64,68 @@ func (h *BalanceHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
+
+func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.Request) {
+	// Проверка авторизации пользователя
+	_, err := GetUserCookie(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Чтение данных запроса
+	var withdrawRequest struct {
+		Order string `json:"order"`
+		Sum   int    `json:"sum"`
+	}
+
+	// Декодирование JSON-данных запроса
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&withdrawRequest); err != nil {
+		http.Error(w, "Invalid request format", http.StatusBadRequest)
+		return
+	}
+
+	// Проверка корректности номера заказа
+	if !isValidLuhnAlgorithm(withdrawRequest.Order) {
+		http.Error(w, "Invalid order number format", http.StatusUnprocessableEntity)
+		return
+	}
+
+	// Начало транзакции с пессимистической блокировкой
+	//tx, err := h.db.Begin()
+	//if err != nil {
+	//	http.Error(w, "Failed to start transaction", http.StatusInternalServerError)
+	//	return
+	//}
+	//defer tx.Rollback() // Откатываем транзакцию в случае ошибки
+
+	// Получение текущего баланса пользователя с пессимистической блокировкой
+	//userBalance, err := h.balanceRepository.GetUserBalanceWithLock(tx, userID)
+	//if err != nil {
+	//	http.Error(w, "Failed to get user balance", http.StatusInternalServerError)
+	//	return
+	//}
+	//
+	//// Проверка наличия достаточного количества баллов на счете пользователя
+	//if userBalance < withdrawRequest.Sum {
+	//	http.Error(w, "Insufficient funds", http.StatusPaymentRequired)
+	//	return
+	//}
+
+	//	err = h.balanceRepository.WithdrawBalance(tx, userID, withdrawRequest.Sum)
+	//	if err != nil {
+	//		http.Error(w, "Failed to withdraw balance", http.StatusInternalServerError)
+	//		return
+	//	} Проведение операции списания
+
+	// Фиксация транзакции
+	//err = tx.Commit()
+	//if err != nil {
+	//	http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+	//	return
+	//}
+
+	// Успешное списание средств
+	w.WriteHeader(http.StatusOK)
+}

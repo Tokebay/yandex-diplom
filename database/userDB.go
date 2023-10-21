@@ -15,15 +15,15 @@ var ErrUserNotFound = errors.New("user not found")
 var ErrAlreadyUserExist = errors.New("user already exist")
 
 type UserRepository interface {
-	CreateUser(user models.User) (string, int, error)
+	CreateUser(user models.User) (string, int64, error)
 	GetUser(login string) (*models.User, error)
 }
 
-func (p *PostgreStorage) CreateUser(user models.User) (string, int, error) {
+func (p *PostgreStorage) CreateUser(user models.User) (string, int64, error) {
 
 	var (
 		login  string
-		userID int
+		userID int64
 		err    = p.db.QueryRow("INSERT INTO users (login, password, created_at) values ($1, $2, $3) on conflict (login) do nothing RETURNING login, id", user.Login, user.Password, user.CreatedAt).Scan(&login, &userID)
 	)
 	if err != nil {
