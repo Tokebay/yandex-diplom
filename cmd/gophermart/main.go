@@ -37,7 +37,7 @@ func run() error {
 	}
 
 	cfg := config.NewConfig()
-
+	
 	// Подключение к базе данных
 	db, err := database.NewPostgreSQL(cfg.DatabaseURI)
 	if err != nil {
@@ -68,7 +68,7 @@ func run() error {
 			cancel() // Отменяем контекст при ошибке
 		}
 	}()
-	
+
 	<-ctx.Done()
 
 	return nil

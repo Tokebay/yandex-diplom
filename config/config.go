@@ -26,6 +26,8 @@ func NewConfig() *Config {
 }
 
 func (c *Config) parseEnv() {
+	PrintUsage()
+
 	if envRunAddress := os.Getenv("RUN_ADDRESS"); envRunAddress != "" {
 		c.RunAddress = envRunAddress
 	}

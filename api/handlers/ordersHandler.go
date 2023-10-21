@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -101,8 +102,11 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(database.TimeoutContextDB)*time.Second)
+	defer cancel()
+
 	//Получение списка заказов для пользователя из базы данных
-	orders, err := h.orderRepository.GetOrdersByUserID(r.Context(), userID)
+	orders, err := h.orderRepository.GetOrdersByUserID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, database.ErrDataNotFound) {
 			w.WriteHeader(http.StatusNoContent)

@@ -9,6 +9,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	TimeoutContextDB = 10
+)
+
 var ErrOrderExistsForUser = errors.New("order already exists for the user")
 var ErrOrderExists = errors.New("order already exists")
 var ErrDataNotFound = errors.New("data not found")

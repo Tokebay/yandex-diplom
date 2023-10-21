@@ -7,6 +7,9 @@ CREATE TABLE  IF NOT EXISTS orders (
     accrual decimal,
     user_id integer REFERENCES users(id)
     );
+
+CREATE INDEX idx_user_id ON orders(user_id);
+
 -- +goose StatementEnd
 
 -- +goose Down

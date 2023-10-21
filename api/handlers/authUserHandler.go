@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Tokebay/yandex-diplom/api/logger"
@@ -69,7 +70,14 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Expires:  time.Now().Add(TokenExp),
 	})
-	
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "userID",
+		Value:    strconv.FormatInt(user.ID, 10),
+		HttpOnly: true,
+		Expires:  time.Now().Add(TokenExp),
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
