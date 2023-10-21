@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/Tokebay/yandex-diplom/api/logger"
@@ -16,7 +17,7 @@ type OrderRepository interface {
 	OrderExists(userID int64, orderID string) (bool, error)
 	OrderExistsByNumber(orderID string) (bool, error)
 	UploadOrder(order models.Order) error
-	GetOrdersByUserID(userID int64) ([]models.OrderResponse, error)
+	GetOrdersByUserID(ctx context.Context, userID int64) ([]models.OrderResponse, error)
 }
 
 func (p *PostgreStorage) OrderExists(userID int64, orderNumber string) (bool, error) {
@@ -64,9 +65,9 @@ func (p *PostgreStorage) GetUserBalanceWithLock(userID int) (float64, error) {
 	return balance, nil
 }
 
-func (p *PostgreStorage) GetOrdersByUserID(userID int64) ([]models.OrderResponse, error) {
+func (p *PostgreStorage) GetOrdersByUserID(ctx context.Context, userID int64) ([]models.OrderResponse, error) {
 
-	rows, err := p.db.Query("SELECT order_id, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC", userID)
+	rows, err := p.db.QueryContext(ctx, "SELECT order_id, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC", userID)
 	if err != nil {
 		return nil, err
 	}

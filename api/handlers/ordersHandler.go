@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -96,32 +95,14 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetOrdersHandler")
 
-	//orders, err := getOrders(r.Context(), h)
-	//if err != nil {
-	//	if errors.Is(err, database.ErrDataNotFound) {
-	//		logger.Log.Error("Error No Content", zap.Error(err))
-	//		w.WriteHeader(http.StatusNoContent)
-	//		return
-	//	}
-	//
-	//	if errors.Is(err, ErrUnauthorized) {
-	//		logger.Log.Error("Error Unauthorized", zap.Error(err))
-	//		w.WriteHeader(http.StatusUnauthorized)
-	//		return
-	//	}
-	//
-	//	logger.Log.Error("Error getting orders", zap.Error(err))
-	//	w.WriteHeader(http.StatusInternalServerError)
-	//	return
-	//}
 	userID, err := GetUserCookie(r)
-	if err != nil && userID == -1 {
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	//Получение списка заказов для пользователя из базы данных
-	orders, err := h.orderRepository.GetOrdersByUserID(userID)
+	orders, err := h.orderRepository.GetOrdersByUserID(r.Context(), userID)
 	if err != nil {
 		if errors.Is(err, database.ErrDataNotFound) {
 			w.WriteHeader(http.StatusNoContent)
@@ -144,22 +125,6 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(ordersResp)
-}
-
-func getOrders(ctx context.Context, h *OrderHandler) ([]models.OrderResponse, error) {
-	userID, ok := ctx.Value(models.UserIDKey).(int64)
-	fmt.Printf("getOrders. userID %d \n", userID)
-	if !ok {
-		return nil, errors.New("incorrect user id")
-	}
-
-	orders, err := h.orderRepository.GetOrdersByUserID(userID)
-	if err != nil {
-		logger.Log.Error("Error getting orders", zap.Error(err))
-		return nil, err
-	}
-
-	return orders, nil
 }
 
 func isValidLuhnAlgorithm(number string) bool {
