@@ -124,6 +124,7 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+	fmt.Printf("orders %s \n", ordersResp)
 
 	// Отправка успешного ответа
 	w.Header().Set("Content-Type", "application/json")

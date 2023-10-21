@@ -24,7 +24,7 @@ func NewBalanceHandler(balanceRepository database.UserBalanceRepository) *Balanc
 // GetBalanceHandler данные о текущей сумме баллов лояльности, а также сумме использованных за весь период регистрации баллов
 func (h *BalanceHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	// Извлекаем идентификатор пользователя из контекста запроса
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value("userID").(int64)
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return

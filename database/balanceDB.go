@@ -7,12 +7,12 @@ import (
 )
 
 type UserBalanceRepository interface {
-	GetBonusBalance(userID int) (float64, error)
-	WithdrawBalance(userID int) (float64, error)
+	GetBonusBalance(userID int64) (float64, error)
+	WithdrawBalance(userID int64) (float64, error)
 }
 
 // GetBonusBalance общая активных баллов лояльности за весь период
-func (p *PostgreStorage) GetBonusBalance(userID int) (float64, error) {
+func (p *PostgreStorage) GetBonusBalance(userID int64) (float64, error) {
 
 	var userTotalBonuses sql.NullFloat64
 	err := p.db.QueryRow("SELECT SUM(accrual) AS total_accrual FROM orders WHERE user_id=$1", userID).Scan(&userTotalBonuses)
@@ -31,7 +31,7 @@ func (p *PostgreStorage) GetBonusBalance(userID int) (float64, error) {
 }
 
 // WithdrawBalance общая сумма использованных баллов лояльности за весь период
-func (p *PostgreStorage) WithdrawBalance(userID int) (float64, error) {
+func (p *PostgreStorage) WithdrawBalance(userID int64) (float64, error) {
 	var totalWithdrawn sql.NullFloat64
 	err := p.db.QueryRow("SELECT SUM(accrual) AS total_withdrawn FROM withdrawals WHERE user_id=$1", userID).
 		Scan(&totalWithdrawn)

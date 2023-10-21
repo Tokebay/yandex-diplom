@@ -37,7 +37,7 @@ func run() error {
 	}
 
 	cfg := config.NewConfig()
-	
+
 	// Подключение к базе данных
 	db, err := database.NewPostgreSQL(cfg.DatabaseURI)
 	if err != nil {
@@ -49,14 +49,14 @@ func run() error {
 	userHandler := handlers.NewUserHandler(db)
 	orderHandler := handlers.NewOrderHandler(db)
 	balanceHandler := handlers.NewBalanceHandler(db)
+
 	app := &App{
 		UserHandler:    userHandler,
 		OrderHandler:   orderHandler,
 		BalanceHandler: balanceHandler,
 	}
 
-	r := createRouter(cfg, app)
-
+	r := createRouter(app)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -74,17 +74,19 @@ func run() error {
 	return nil
 }
 
-func createRouter(cfg *config.Config, app *App) chi.Router {
+func createRouter(app *App) chi.Router {
 	// Создание роутера Chi
 	r := chi.NewRouter()
+	r.Group(func(r chi.Router) {
+		// Middleware для логирования запросов
+		r.Use(logger.LoggerMiddleware)
+		r.Post("/api/user/register", app.UserHandler.RegisterHandler)
+		r.Post("/api/user/login", app.UserHandler.LoginHandler)
 
-	// Middleware для логирования запросов
-	r.Use(logger.LoggerMiddleware)
-	r.Post("/api/user/register", app.UserHandler.RegisterHandler)
-	r.Post("/api/user/login", app.UserHandler.LoginHandler)
+		r.With(middleware.AuthMiddleware).Post("/api/user/orders", app.OrderHandler.UploadOrderHandler)
+		r.With(middleware.AuthMiddleware).Get("/api/user/orders", app.OrderHandler.GetOrdersHandler)
+		r.With(middleware.AuthMiddleware).Get("/api/user/balance", app.BalanceHandler.GetBalanceHandler)
 
-	r.With(middleware.AuthMiddleware).Post("/api/user/orders", app.OrderHandler.UploadOrderHandler)
-	r.With(middleware.AuthMiddleware).Get("/api/user/orders", app.OrderHandler.GetOrdersHandler)
-	r.With(middleware.AuthMiddleware).Get("/api/user/balance", app.BalanceHandler.GetBalanceHandler)
+	})
 	return r
 }
