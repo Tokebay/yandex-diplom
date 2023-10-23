@@ -16,6 +16,7 @@ const (
 var ErrOrderExistsForUser = errors.New("order already exists for the user")
 var ErrOrderExists = errors.New("order already exists")
 var ErrDataNotFound = errors.New("data not found")
+var ErrNotEnoughBalance = errors.New("Not enough balance")
 
 type OrderRepository interface {
 	OrderExists(userID int64, orderID string) (bool, error)
@@ -57,16 +58,6 @@ func (p *PostgreStorage) UploadOrder(order models.Order) error {
 		return err
 	}
 	return nil
-}
-
-func (p *PostgreStorage) GetUserBalanceWithLock(userID int) (float64, error) {
-	var balance float64
-	err := p.db.QueryRow("SELECT balance FROM users WHERE id = $1 FOR UPDATE", userID).Scan(&balance)
-	if err != nil {
-		logger.Log.Error("Error getting user balance with lock", zap.Error(err))
-		return 0, err
-	}
-	return balance, nil
 }
 
 func (p *PostgreStorage) GetOrdersByUserID(ctx context.Context, userID int64) ([]models.OrderResponse, error) {
