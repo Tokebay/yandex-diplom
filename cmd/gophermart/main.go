@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-
+	"github.com/Tokebay/yandex-diplom/api/accrual"
 	"github.com/Tokebay/yandex-diplom/api/middleware"
+	"net/http"
 
 	"github.com/Tokebay/yandex-diplom/api/handlers"
 	"github.com/Tokebay/yandex-diplom/api/logger"
@@ -27,6 +27,7 @@ type App struct {
 	UserHandler    *handlers.UserHandler
 	OrderHandler   *handlers.OrderHandler
 	BalanceHandler *handlers.BalanceHandler
+	ScoringHandler *handlers.ScoringSystemHandler
 }
 
 func run() error {
@@ -49,11 +50,13 @@ func run() error {
 	userHandler := handlers.NewUserHandler(db)
 	orderHandler := handlers.NewOrderHandler(db)
 	balanceHandler := handlers.NewBalanceHandler(db)
+	scoringHandler := handlers.NewScoringSystem(db)
 
 	app := &App{
 		UserHandler:    userHandler,
 		OrderHandler:   orderHandler,
 		BalanceHandler: balanceHandler,
+		ScoringHandler: scoringHandler,
 	}
 
 	r := createRouter(app)
@@ -65,8 +68,17 @@ func run() error {
 		err := http.ListenAndServe(cfg.RunAddress, r)
 		if err != nil {
 			logger.Log.Fatal("Error starting HTTP server", zap.Error(err))
-			cancel() // Отменяем контекст при ошибке
+			cancel()
 		}
+	}()
+
+	// Запуск системы начисления баллов в фоне
+	go func() {
+		apiAccrualSystem := &accrual.APIAccrualSystem{
+			ScoringSystemHandler: scoringHandler,
+			Config:               cfg,
+		}
+		apiAccrualSystem.ScoringSystem()
 	}()
 
 	<-ctx.Done()

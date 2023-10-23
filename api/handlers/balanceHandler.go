@@ -113,6 +113,10 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 			w.WriteHeader(http.StatusPaymentRequired)
 			return
 		}
+		if errors.Is(err, database.ErrOrderAlreadyUploaded) {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		http.Error(w, "Failed to withdraw balance", http.StatusInternalServerError)
 		return
 	}

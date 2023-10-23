@@ -8,6 +8,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v5 v5.4.3
+	github.com/lib/pq v1.10.9
 	github.com/pressly/goose/v3 v3.15.1
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.14.0
