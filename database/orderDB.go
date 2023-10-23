@@ -16,7 +16,7 @@ const (
 var ErrOrderExistsForUser = errors.New("order already exists for the user")
 var ErrOrderExists = errors.New("order already exists")
 var ErrDataNotFound = errors.New("data not found")
-var ErrNotEnoughBalance = errors.New("Not enough balance")
+var ErrNotEnoughBalance = errors.New("not enough balance")
 
 type OrderRepository interface {
 	OrderExists(userID int64, orderID string) (bool, error)

@@ -28,7 +28,7 @@ func (s *APIAccrualSystem) ScoringSystem() {
 		}
 
 		// Создаем ссылку для запроса GET
-		accAddr := fmt.Sprintf("%shttp://localhost:8080/api/orders/%s", s.Config.AccrualSystemAddr, orderID)
+		accAddr := fmt.Sprintf("%s/api/orders/%s", s.Config.AccrualSystemPort, orderID)
 		resp, err := http.Get(accAddr)
 		if err != nil {
 			logger.Log.Error("Error GET request failed to accrual system", zap.Error(err))

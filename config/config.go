@@ -10,6 +10,7 @@ type Config struct {
 	RunAddress        string
 	DatabaseURI       string
 	AccrualSystemAddr string
+	AccrualSystemPort string
 }
 
 func NewConfig() *Config {
@@ -35,7 +36,7 @@ func (c *Config) parseEnv() {
 		c.DatabaseURI = envDatabaseURI
 	}
 	if envAccrualSystemAddr := os.Getenv("ACCRUAL_SYSTEM_ADDRESS"); envAccrualSystemAddr != "" {
-		c.AccrualSystemAddr = envAccrualSystemAddr
+		c.AccrualSystemPort = envAccrualSystemAddr
 	}
 }
 
