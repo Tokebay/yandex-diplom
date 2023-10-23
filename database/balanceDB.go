@@ -66,6 +66,9 @@ func (p *PostgreStorage) Withdraw(ctx context.Context, userID int64, orderID str
 
 	// Получаем текущий баланс пользователя по всем заказам
 	currentBalance, err := p.GetBonusBalance(ctx, userID)
+	if err != nil {
+		logger.Log.Error("Error get balance", zap.Error(err))
+	}
 	fmt.Printf("sum(accrual) %f \n", currentBalance)
 	// Проверяем, достаточно ли баллов для списания
 	if currentBalance >= amount {

@@ -34,19 +34,22 @@ func (s *APIAccrualSystem) ScoringSystem() {
 			logger.Log.Error("Error GET request failed to accrual system", zap.Error(err))
 			continue
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode == http.StatusOK {
 			var orderScoring models.ScoringSystem
 			if err := json.NewDecoder(resp.Body).Decode(&orderScoring); err != nil {
 				logger.Log.Error("Error decoding response from scoring system", zap.Error(err))
-				continue
+			} else {
+				// Обновляем данные заказа и начисляем бонусы
+				if err := s.ScoringSystemHandler.UpdateOrder(context.Background(), orderScoring); err != nil {
+					logger.Log.Error("Error updating order", zap.Error(err))
+				}
 			}
-
-			// Обновляем данные заказа и начисляем бонусы
-			if err := s.ScoringSystemHandler.UpdateOrder(context.Background(), orderScoring); err != nil {
-				logger.Log.Error("Error updating order", zap.Error(err))
-			}
+			// Закрываем тело ответа после успешной обработки
+			resp.Body.Close()
+		} else {
+			// Закрываем тело ответа в случае ошибочного статуса
+			resp.Body.Close()
 		}
 
 		// Ждем какой-то интервал перед следующим запросом к системе расчета баллов
