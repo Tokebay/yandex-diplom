@@ -88,7 +88,7 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 	logger.Log.Info("Received withdrawal request", zap.String("OrderID", wRequest.OrderID), zap.Float64("Sum", wRequest.Sum))
 
 	// Проверка корректности номера заказа и суммы
-	if wRequest.OrderID == "" || wRequest.Sum < 0 {
+	if wRequest.OrderID == "" || wRequest.Sum <= 0 {
 		http.Error(w, "Invalid order number or withdrawal amount", http.StatusUnprocessableEntity)
 		return
 	}
@@ -98,18 +98,6 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		http.Error(w, "Invalid order number format", http.StatusUnprocessableEntity)
 		return
 	}
-
-	// проверка номера заказа
-	//isOrderExist, err := h.balanceRepository.CheckOrder(userID, string(wRequest.OrderID))
-	//if err != nil {
-	//	logger.Log.Error("Error checking order existence", zap.Error(err))
-	//	http.Error(w, "Failed to check order existence", http.StatusInternalServerError)
-	//	return
-	//}
-	//if !isOrderExist {
-	//	http.Error(w, "Order not exist", http.StatusUnprocessableEntity)
-	//	return
-	//}
 
 	err = h.balanceRepository.Withdraw(r.Context(), userID, wRequest.OrderID, wRequest.Sum)
 	if err != nil {
@@ -123,4 +111,36 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 
 	// Успешное списание средств
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *BalanceHandler) GetWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
+	// Проверка авторизации пользователя
+	userID, err := GetUserCookie(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Получение списка выводов средств из базы данных
+	withdrawals, err := h.balanceRepository.GetWithdrawals(r.Context(), userID)
+	if err != nil {
+		logger.Log.Error("Error getting withdrawals", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверка на отсутствие записей о выводе средств
+	if len(withdrawals) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	// Преобразование в JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(withdrawals); err != nil {
+		logger.Log.Error("Error encoding withdrawals response", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }

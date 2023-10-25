@@ -110,6 +110,7 @@ func createRouter(app *App) chi.Router {
 		r.With(middleware.AuthMiddleware).Get("/api/user/orders", app.OrderHandler.GetOrdersHandler)
 		r.With(middleware.AuthMiddleware).Get("/api/user/balance", app.BalanceHandler.GetBalanceHandler)
 		r.With(middleware.AuthMiddleware).Post("/api/user/balance/withdraw", app.BalanceHandler.WithdrawBalanceHandler)
+		r.With(middleware.AuthMiddleware).Get("/api/user/withdrawals", app.BalanceHandler.GetWithdrawalsHandler)
 
 	})
 	return r

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/Tokebay/yandex-diplom/api/logger"
+	"github.com/Tokebay/yandex-diplom/domain/models"
 
 	"go.uber.org/zap"
 )
@@ -14,6 +15,31 @@ type UserBalanceRepository interface {
 	WithdrawBalance(ctx context.Context, userID int64) (float64, error)
 	Withdraw(ctx context.Context, userID int64, orderID string, sum float64) error
 	CheckOrder(userID int64, orderID string) (bool, error)
+	GetWithdrawals(ctx context.Context, userID int64) ([]models.Withdraw, error)
+}
+
+func (p *PostgreStorage) GetWithdrawals(ctx context.Context, userID int64) ([]models.Withdraw, error) {
+	rows, err := p.db.QueryContext(ctx, "SELECT order_id, bonuses, uploaded_at FROM withdrawals WHERE user_id = $1 ORDER BY uploaded_at ASC", userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var withdrawals []models.Withdraw
+	for rows.Next() {
+		var withdrawal models.Withdraw
+		err := rows.Scan(&withdrawal.OrderID, &withdrawal.Sum, &withdrawal.ProcessedAt)
+		if err != nil {
+			return nil, err
+		}
+		withdrawals = append(withdrawals, withdrawal)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return withdrawals, nil
 }
 
 // GetBonusBalance общая активных баллов лояльности за весь период
