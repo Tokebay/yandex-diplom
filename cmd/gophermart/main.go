@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/Tokebay/yandex-diplom/api/accrual"
 	"github.com/Tokebay/yandex-diplom/api/middleware"
 	"net/http"
 
@@ -65,16 +64,16 @@ func run() error {
 	defer cancel()
 
 	// Создаем канал для сигнала об остановке
-	done := make(chan struct{})
+	//done := make(chan struct{})
 
 	// Запускаем функцию ScoringSystem в фоне
-	go func() {
-		apiAccrualSystem := &accrual.APIAccrualSystem{
-			ScoringSystemHandler: scoringHandler,
-			Config:               cfg,
-		}
-		apiAccrualSystem.ScoringSystem(done, ctx)
-	}()
+	//go func() {
+	//	apiAccrualSystem := &accrual.APIAccrualSystem{
+	//		ScoringSystemHandler: scoringHandler,
+	//		Config:               cfg,
+	//	}
+	//	apiAccrualSystem.ScoringSystem(done, ctx)
+	//}()
 
 	// Запуск HTTP SERVER
 	go func() {
