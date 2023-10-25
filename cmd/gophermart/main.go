@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"github.com/Tokebay/yandex-diplom/api/accrual"
 	"github.com/Tokebay/yandex-diplom/api/middleware"
 	"net/http"
 
@@ -61,6 +59,22 @@ func run() error {
 
 	r := createRouter(app)
 
+	//ctx, cancel := context.WithCancel(context.Background())
+	//defer cancel()
+
+	//// Создаем канал для сигнала об остановке
+	//done := make(chan struct{})
+	//
+	//// Запускаем функцию ScoringSystem в фоне
+	//go func() {
+	//	apiAccrualSystem := &accrual.APIAccrualSystem{
+	//		ScoringSystemHandler: scoringHandler,
+	//		Config:               cfg,
+	//	}
+	//	apiAccrualSystem.ScoringSystem(done, ctx)
+	//}()
+	//<-done
+
 	// Запуск HTTP SERVER
 	go func() {
 		err := http.ListenAndServe(cfg.RunAddress, r)
@@ -68,23 +82,6 @@ func run() error {
 			logger.Log.Fatal("Error starting HTTP server", zap.Error(err))
 		}
 	}()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Создаем канал для сигнала об остановке
-	done := make(chan struct{})
-
-	// Запускаем функцию ScoringSystem в фоне
-	go func() {
-		apiAccrualSystem := &accrual.APIAccrualSystem{
-			ScoringSystemHandler: scoringHandler,
-			Config:               cfg,
-		}
-		apiAccrualSystem.ScoringSystem(done, ctx)
-	}()
-
-	<-done
 
 	return nil
 }
