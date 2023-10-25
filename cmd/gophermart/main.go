@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/Tokebay/yandex-diplom/api/accrual"
 	"net/http"
 
 	"github.com/Tokebay/yandex-diplom/api/middleware"
@@ -27,6 +28,7 @@ type App struct {
 	UserHandler    *handlers.UserHandler
 	OrderHandler   *handlers.OrderHandler
 	BalanceHandler *handlers.BalanceHandler
+	ScoringHandler *handlers.ScoringSystemHandler
 }
 
 func run() error {
@@ -49,16 +51,30 @@ func run() error {
 	userHandler := handlers.NewUserHandler(db)
 	orderHandler := handlers.NewOrderHandler(db)
 	balanceHandler := handlers.NewBalanceHandler(db)
+	scoringHandler := handlers.NewScoringSystem(db)
 
 	app := &App{
 		UserHandler:    userHandler,
 		OrderHandler:   orderHandler,
 		BalanceHandler: balanceHandler,
+		ScoringHandler: scoringHandler,
 	}
 
 	r := createRouter(app)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	//Создаем канал для сигнала об остановке
+	done := make(chan struct{})
+
+	//Запускаем функцию ScoringSystem в фоне
+	go func() {
+		apiAccrualSystem := &accrual.APIAccrualSystem{
+			ScoringSystemHandler: scoringHandler,
+			Config:               cfg,
+		}
+		apiAccrualSystem.ScoringSystem(done, ctx)
+	}()
 
 	// Запуск HTTP сервера с контекстом
 	go func() {
