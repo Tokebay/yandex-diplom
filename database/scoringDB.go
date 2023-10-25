@@ -2,8 +2,9 @@ package database
 
 import (
 	"context"
-	"fmt"
+	"github.com/Tokebay/yandex-diplom/api/logger"
 	"github.com/Tokebay/yandex-diplom/domain/models"
+	"go.uber.org/zap"
 )
 
 type ScoringRepository interface {
@@ -11,22 +12,25 @@ type ScoringRepository interface {
 	UpdateOrder(ctx context.Context, order models.ScoringSystem) error
 }
 
-// GetOrderStatus получение статуса заказа
+// GetOrderStatus берем заказ со статусом NEW
 func (p *PostgreStorage) GetOrderStatus(ctx context.Context) (string, error) {
 	var orderID string
 	err := p.db.QueryRowContext(ctx, "SELECT order_id FROM orders WHERE status NOT IN ('PROCESSED', 'INVALID') LIMIT 1").
 		Scan(&orderID)
 	if err != nil {
-		return "", fmt.Errorf("postgreSQL: getOrderStatus %s", err)
+		logger.Log.Error("Error getOrderStatus", zap.Error(err))
+		return "", err
 	}
 	return orderID, nil
 }
 
-// UpdateOrder обновление статуса заказа системой внешней системой accrual
+// UpdateOrder обновление статуса заказа внешней системой accrual
 func (p *PostgreStorage) UpdateOrder(ctx context.Context, order models.ScoringSystem) error {
+	
 	_, err := p.db.ExecContext(ctx, "UPDATE orders SET status=$1, accrual=$2 WHERE order_id=$3", order.Status, order.Accrual, order.OrderID)
 	if err != nil {
-		return fmt.Errorf("postgreSQL: updateOrder %s", err)
+		logger.Log.Error("Error updateOrder", zap.Error(err))
+		return err
 	}
 	return nil
 }

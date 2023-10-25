@@ -72,16 +72,19 @@ func run() error {
 		}
 	}()
 
-	// Запуск системы начисления баллов в фоне
+	// Создаем канал для сигнала об остановке
+	done := make(chan struct{})
+
+	// Запускаем функцию ScoringSystem в фоне
 	go func() {
 		apiAccrualSystem := &accrual.APIAccrualSystem{
 			ScoringSystemHandler: scoringHandler,
 			Config:               cfg,
 		}
-		apiAccrualSystem.ScoringSystem()
+		apiAccrualSystem.ScoringSystem(done, ctx)
 	}()
 
-	<-ctx.Done()
+	<-done
 
 	return nil
 }

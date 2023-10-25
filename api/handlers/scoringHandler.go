@@ -12,8 +12,14 @@ type ScoringSystemHandler struct {
 	scoringRepository database.ScoringRepository
 }
 
+func NewScoringSystem(scoringRepository database.ScoringRepository) *ScoringSystemHandler {
+	return &ScoringSystemHandler{
+		scoringRepository: scoringRepository,
+	}
+}
+
 func (h *ScoringSystemHandler) GetOrderStatus(ctx context.Context) (string, error) {
-	// Ваша реализация метода GetOrderStatus
+
 	orderID, err := h.scoringRepository.GetOrderStatus(ctx)
 	if err != nil {
 		logger.Log.Error("Error order exist", zap.Error(err))
@@ -29,10 +35,4 @@ func (h *ScoringSystemHandler) UpdateOrder(ctx context.Context, order models.Sco
 		return err
 	}
 	return nil
-}
-
-func NewScoringSystem(scoringRepository database.ScoringRepository) *ScoringSystemHandler {
-	return &ScoringSystemHandler{
-		scoringRepository: scoringRepository,
-	}
 }
