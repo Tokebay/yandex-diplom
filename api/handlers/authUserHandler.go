@@ -49,10 +49,15 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	// Хэшируем пароль
 	user.Password = getHash([]byte(user.Password))
 
-	// Создаем пользователя в репозитории
-	login, userID, err := h.userRepository.CreateUser(user)
-	if err != nil && login == "" {
-		w.WriteHeader(http.StatusConflict)
+	// Создаем пользователя
+	userID, err := h.userRepository.CreateUser(user)
+	if err != nil {
+		if errors.Is(err, database.ErrAlreadyUserExist) {
+			w.WriteHeader(http.StatusConflict)
+			logger.Log.Error("Error finding user", zap.Error(err))
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 

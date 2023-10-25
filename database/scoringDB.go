@@ -19,14 +19,14 @@ func (p *PostgreStorage) GetOrderStatus(ctx context.Context) (string, error) {
 		Scan(&orderID)
 	if err != nil {
 		logger.Log.Error("Error getOrderStatus", zap.Error(err))
-		return "", err
+		return "", ErrDataNotFound
 	}
 	return orderID, nil
 }
 
 // UpdateOrder обновление статуса заказа внешней системой accrual
 func (p *PostgreStorage) UpdateOrder(ctx context.Context, order models.ScoringSystem) error {
-	
+
 	_, err := p.db.ExecContext(ctx, "UPDATE orders SET status=$1, accrual=$2 WHERE order_id=$3", order.Status, order.Accrual, order.OrderID)
 	if err != nil {
 		logger.Log.Error("Error updateOrder", zap.Error(err))

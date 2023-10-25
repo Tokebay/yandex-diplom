@@ -22,6 +22,7 @@ func (h *ScoringSystemHandler) GetOrderStatus(ctx context.Context) (string, erro
 
 	orderID, err := h.scoringRepository.GetOrderStatus(ctx)
 	if err != nil {
+
 		logger.Log.Error("Error order exist", zap.Error(err))
 	}
 
