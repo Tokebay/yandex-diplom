@@ -3,18 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/Tokebay/yandex-diplom/api/accrual"
-	"github.com/Tokebay/yandex-diplom/api/middleware"
-	mdlw "github.com/go-chi/chi/v5/middleware"
-	"net/http"
-	"time"
-
 	"github.com/Tokebay/yandex-diplom/api/handlers"
 	"github.com/Tokebay/yandex-diplom/api/logger"
+	"github.com/Tokebay/yandex-diplom/api/middleware"
 	"github.com/Tokebay/yandex-diplom/config"
 	"github.com/Tokebay/yandex-diplom/database"
 	"github.com/go-chi/chi/v5"
+	mdlw "github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
+	"net/http"
 )
 
 func main() {
@@ -66,21 +63,21 @@ func run() error {
 	defer cancel()
 
 	//Запускаем функцию ScoringSystem
-	ticker := time.NewTicker(time.Millisecond * 100)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				apiAccrualSystem := &accrual.APIAccrualSystem{
-					ScoringSystemHandler: app.ScoringHandler,
-					Config:               cfg,
-				}
-				apiAccrualSystem.ScoringSystem()
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
+	//ticker := time.NewTicker(time.Millisecond * 100)
+	//go func() {
+	//	for {
+	//		select {
+	//		case <-ticker.C:
+	//			apiAccrualSystem := &accrual.APIAccrualSystem{
+	//				ScoringSystemHandler: app.ScoringHandler,
+	//				Config:               cfg,
+	//			}
+	//			apiAccrualSystem.ScoringSystem()
+	//		case <-ctx.Done():
+	//			return
+	//		}
+	//	}
+	//}()
 
 	// Запуск HTTP сервера с контекстом
 	go func() {

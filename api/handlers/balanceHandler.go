@@ -86,7 +86,7 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// Проверка корректности номера заказа и суммы
-	if wRequest.OrderID == "" || wRequest.Sum <= 0 {
+	if wRequest.OrderID == "" || wRequest.Sum < 0 {
 		http.Error(w, "Invalid order number or withdrawal amount", http.StatusUnprocessableEntity)
 		return
 	}
@@ -100,10 +100,12 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 	// проверка номера заказа
 	isOrderExist, err := h.balanceRepository.CheckOrder(userID, string(wRequest.OrderID))
 	if err != nil {
-		logger.Log.Error("Error order exist", zap.Error(err))
+		logger.Log.Error("Error checking order existence", zap.Error(err))
+		http.Error(w, "Failed to check order existence", http.StatusInternalServerError)
+		return
 	}
 	if !isOrderExist {
-		http.Error(w, "Order was uploaded by another user", http.StatusUnprocessableEntity)
+		http.Error(w, "Order not exist", http.StatusUnprocessableEntity)
 		return
 	}
 

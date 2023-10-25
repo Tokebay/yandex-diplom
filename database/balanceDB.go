@@ -68,24 +68,21 @@ func (p *PostgreStorage) Withdraw(ctx context.Context, userID int64, orderID str
 		return err
 	}
 
+	fmt.Printf("currentBalance %f; amount %f \n", currentBalance, amount)
 	// Проверяем, достаточно ли баллов для списания
 	if currentBalance >= amount {
 		// Выполняем списание баллов
 		_, err := tx.ExecContext(ctx, "INSERT INTO withdrawals (order_id, user_id, bonuses, uploaded_at) VALUES ($1, $2, $3, NOW())",
 			orderID, userID, amount)
 		if err != nil {
-			return err
-		}
-
-		// Обновляем баланс в таблице orders (предполагая, что у вас есть столбец balance в таблице orders)
-		_, err = tx.ExecContext(ctx, "UPDATE orders SET accrual = accrual - $1 WHERE user_id = $2", amount, userID)
-		if err != nil {
+			logger.Log.Error("Error insert data to table withdrawals", zap.Error(err))
 			return err
 		}
 
 		// Коммитим транзакцию
 		err = tx.Commit()
 		if err != nil {
+			logger.Log.Error("Error commit transaction", zap.Error(err))
 			return err
 		}
 		return nil
@@ -96,12 +93,11 @@ func (p *PostgreStorage) Withdraw(ctx context.Context, userID int64, orderID str
 }
 
 func (p *PostgreStorage) CheckOrder(userID int64, orderNumber string) (bool, error) {
-	fmt.Println("OrderExists")
 	var exists bool
 	err := p.db.QueryRow("SELECT EXISTS(SELECT 1 FROM orders WHERE user_id = $1 AND order_id = $2)", userID, orderNumber).Scan(&exists)
 	if err != nil {
-		logger.Log.Error("Order exist", zap.Error(err))
-		return false, ErrOrderExistsForUser
+		logger.Log.Error("Error checking order existence", zap.Error(err))
+		return false, err
 	}
 	return exists, nil
 }
