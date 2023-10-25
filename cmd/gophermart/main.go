@@ -65,7 +65,7 @@ func run() error {
 		err := http.ListenAndServe(cfg.RunAddress, r)
 		if err != nil {
 			logger.Log.Fatal("Error starting HTTP server", zap.Error(err))
-			cancel() // Отменяем контекст при ошибке
+			cancel()
 		}
 	}()
 
