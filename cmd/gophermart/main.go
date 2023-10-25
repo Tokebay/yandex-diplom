@@ -60,18 +60,18 @@ func run() error {
 	}
 
 	r := createRouter(app)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	// Запуск HTTP сервера с контекстом
 	go func() {
 		err := http.ListenAndServe(cfg.RunAddress, r)
 		if err != nil {
 			logger.Log.Fatal("Error starting HTTP server", zap.Error(err))
-			cancel()
 		}
 	}()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	
 	// Создаем канал для сигнала об остановке
 	done := make(chan struct{})
 
@@ -92,17 +92,16 @@ func run() error {
 func createRouter(app *App) chi.Router {
 	// Создание роутера Chi
 	r := chi.NewRouter()
-	r.Group(func(r chi.Router) {
-		// Middleware для логирования запросов
-		r.Use(logger.LoggerMiddleware)
-		r.Post("/api/user/register", app.UserHandler.RegisterHandler)
-		r.Post("/api/user/login", app.UserHandler.LoginHandler)
 
-		r.With(middleware.AuthMiddleware).Post("/api/user/orders", app.OrderHandler.UploadOrderHandler)
-		r.With(middleware.AuthMiddleware).Get("/api/user/orders", app.OrderHandler.GetOrdersHandler)
-		r.With(middleware.AuthMiddleware).Get("/api/user/balance", app.BalanceHandler.GetBalanceHandler)
-		r.With(middleware.AuthMiddleware).Post("/api/user/balance/withdraw", app.BalanceHandler.WithdrawBalanceHandler)
+	// Middleware для логирования запросов
+	r.Use(logger.LoggerMiddleware)
+	r.Post("/api/user/register", app.UserHandler.RegisterHandler)
+	r.Post("/api/user/login", app.UserHandler.LoginHandler)
 
-	})
+	r.With(middleware.AuthMiddleware).Post("/api/user/orders", app.OrderHandler.UploadOrderHandler)
+	r.With(middleware.AuthMiddleware).Get("/api/user/orders", app.OrderHandler.GetOrdersHandler)
+	r.With(middleware.AuthMiddleware).Get("/api/user/balance", app.BalanceHandler.GetBalanceHandler)
+	r.With(middleware.AuthMiddleware).Post("/api/user/balance/withdraw", app.BalanceHandler.WithdrawBalanceHandler)
+
 	return r
 }

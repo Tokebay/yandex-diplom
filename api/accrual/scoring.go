@@ -51,7 +51,9 @@ func GetHTTPRequest(ctx context.Context, orderNum string, cfg *config.Config) (*
 	client := &http.Client{
 		Timeout: time.Second * 20,
 	}
+
 	req, err := http.NewRequestWithContext(ctx, "GET", cfg.AccrualSystemAddr+"/api/orders/"+orderNum, nil)
+	//req, err := http.NewRequestWithContext(ctx, "GET", accAddress, nil)
 	if err != nil {
 		logger.Log.Error("error create req", zap.Error(err))
 		return nil, err
