@@ -19,42 +19,37 @@ type APIAccrualSystem struct {
 	Config               *config.Config
 }
 
-func (a *APIAccrualSystem) ScoringSystem(done chan struct{}, ctx context.Context) {
-	for {
-		// Получаем заказ со статусом NEW
-		orderID, err := a.ScoringSystemHandler.GetOrderStatus(context.Background())
-		if err != nil {
-			logger.Log.Error("Error getting order status", zap.Error(err))
-			return
-		}
-
-		// делаем http GET запрос в AccrualSystem
-		orderScoring, err := GetHTTPRequest(ctx, orderID, a.Config)
-		if err != nil {
-			logger.Log.Error("Error GET request failed to accrual system", zap.Error(err))
-			return
-		}
-		if err := a.ScoringSystemHandler.UpdateOrder(context.Background(), *orderScoring); err != nil {
-			logger.Log.Error("Error updating order", zap.Error(err))
-		}
-
-		// Ждем какой-то интервал перед следующим запросом к системе расчета баллов
-		select {
-		case <-time.After(100 * time.Millisecond):
-		case <-done:
-			return
-		}
+func (a *APIAccrualSystem) ScoringSystem() {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // Используйте контекст с длительным таймаутом
+	defer cancel()
+	// Получаем заказ со статусом NEW
+	orderID, err := a.ScoringSystemHandler.GetOrderStatus(ctx)
+	if err != nil {
+		logger.Log.Error("Error getting order status", zap.Error(err))
+		return
 	}
+
+	// делаем http GET запрос в AccrualSystem
+	orderScoring, err := GetHTTPRequest(ctx, orderID, a.Config)
+	if err != nil {
+		logger.Log.Error("HTTP GET request failed to accrual system", zap.Error(err))
+		return
+	}
+
+	if err := a.ScoringSystemHandler.UpdateOrder(ctx, *orderScoring); err != nil {
+		logger.Log.Error("Error updating order", zap.Error(err))
+	}
+
 }
 
 func GetHTTPRequest(ctx context.Context, orderNum string, cfg *config.Config) (*models.ScoringSystem, error) {
 	var order models.ScoringSystem
 	client := &http.Client{
-		Timeout: time.Second * 20,
+		Timeout: time.Second * 30,
 	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", cfg.AccrualSystemAddr+"/api/orders/"+orderNum, nil)
-	//req, err := http.NewRequestWithContext(ctx, "GET", accAddress, nil)
+	URI := cfg.AccrualSystemAddr + "/api/orders/" + orderNum
+	fmt.Printf("accrual URI %s \n", URI)
+	req, err := http.NewRequestWithContext(ctx, "GET", URI, nil)
 	if err != nil {
 		logger.Log.Error("error create req", zap.Error(err))
 		return nil, err
@@ -83,6 +78,9 @@ func GetHTTPRequest(ctx context.Context, orderNum string, cfg *config.Config) (*
 		logger.Log.Error("error unmarshal body", zap.Error(err))
 		return nil, err
 	}
+	// Логируем значение структуры order
+	orderLogger := zap.Any("order", order)
+	logger.Log.Info("Received order details", orderLogger)
 
 	return &order, nil
 }

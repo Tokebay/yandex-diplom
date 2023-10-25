@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/Tokebay/yandex-diplom/api/accrual"
-	"net/http"
-
 	"github.com/Tokebay/yandex-diplom/api/middleware"
+	mdlw "github.com/go-chi/chi/v5/middleware"
+	"net/http"
+	"time"
 
 	"github.com/Tokebay/yandex-diplom/api/handlers"
 	"github.com/Tokebay/yandex-diplom/api/logger"
 	"github.com/Tokebay/yandex-diplom/config"
 	"github.com/Tokebay/yandex-diplom/database"
 	"github.com/go-chi/chi/v5"
-
 	"go.uber.org/zap"
 )
 
@@ -39,6 +39,7 @@ func run() error {
 	}
 
 	cfg := config.NewConfig()
+	logger.Log.Info("Server configuration:", zap.String("RunAddress", cfg.RunAddress), zap.String("DatabaseURI", cfg.DatabaseURI), zap.String("AccrualSystemAddr", cfg.AccrualSystemAddr))
 
 	// Подключение к базе данных
 	db, err := database.NewPostgreSQL(cfg.DatabaseURI)
@@ -64,16 +65,21 @@ func run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	//Создаем канал для сигнала об остановке
-	done := make(chan struct{})
-
-	//Запускаем функцию ScoringSystem в фоне
+	//Запускаем функцию ScoringSystem
+	ticker := time.NewTicker(time.Millisecond * 100)
 	go func() {
-		apiAccrualSystem := &accrual.APIAccrualSystem{
-			ScoringSystemHandler: scoringHandler,
-			Config:               cfg,
+		for {
+			select {
+			case <-ticker.C:
+				apiAccrualSystem := &accrual.APIAccrualSystem{
+					ScoringSystemHandler: app.ScoringHandler,
+					Config:               cfg,
+				}
+				apiAccrualSystem.ScoringSystem()
+			case <-ctx.Done():
+				return
+			}
 		}
-		apiAccrualSystem.ScoringSystem(done, ctx)
 	}()
 
 	// Запуск HTTP сервера с контекстом
@@ -93,9 +99,11 @@ func run() error {
 func createRouter(app *App) chi.Router {
 	// Создание роутера Chi
 	r := chi.NewRouter()
+	r.Use(logger.LoggerMiddleware, mdlw.Recoverer)
+
 	r.Group(func(r chi.Router) {
 		// Middleware для логирования запросов
-		r.Use(logger.LoggerMiddleware)
+
 		r.Post("/api/user/register", app.UserHandler.RegisterHandler)
 		r.Post("/api/user/login", app.UserHandler.LoginHandler)
 

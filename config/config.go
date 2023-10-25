@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-	"fmt"
 	"os"
 )
 
@@ -26,8 +25,6 @@ func NewConfig() *Config {
 }
 
 func (c *Config) parseEnv() {
-	PrintUsage()
-
 	if envRunAddress := os.Getenv("RUN_ADDRESS"); envRunAddress != "" {
 		c.RunAddress = envRunAddress
 	}
@@ -37,9 +34,4 @@ func (c *Config) parseEnv() {
 	if envAccrualSystemAddr := os.Getenv("ACCRUAL_SYSTEM_ADDRESS"); envAccrualSystemAddr != "" {
 		c.AccrualSystemAddr = envAccrualSystemAddr
 	}
-}
-
-func PrintUsage() {
-	fmt.Println("Usage: gofermart -a ADDRESS -d DATABASE_URI -r ACCRUAL_SYSTEM_ADDRESS")
-	flag.PrintDefaults()
 }
