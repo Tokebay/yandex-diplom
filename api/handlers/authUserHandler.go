@@ -48,9 +48,9 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Хэшируем пароль
 	user.Password = getHash([]byte(user.Password))
-
+	ctx := r.Context()
 	// Создаем пользователя
-	userID, err := h.userRepository.CreateUser(user)
+	userID, err := h.userRepository.CreateUser(ctx, user)
 	if err != nil {
 		if errors.Is(err, database.ErrAlreadyUserExist) {
 			w.WriteHeader(http.StatusConflict)
@@ -110,9 +110,9 @@ func (h *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Log.Error("Invalid request format", zap.Error(err))
 		return
 	}
-
+	ctx := r.Context()
 	// Проверка логина и пароля в БД
-	user, err := h.userRepository.GetUser(credentials.Login)
+	user, err := h.userRepository.GetUser(ctx, credentials.Login)
 	if err != nil {
 		if errors.Is(err, database.ErrUserNotFound) {
 			logger.Log.Error("Error finding user", zap.Error(err))

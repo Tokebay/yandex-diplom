@@ -3,6 +3,7 @@ package accrual
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/Tokebay/yandex-diplom/api/handlers"
 	"github.com/Tokebay/yandex-diplom/api/logger"
 	"github.com/Tokebay/yandex-diplom/config"
@@ -65,16 +66,17 @@ func GetHTTPRequest(ctx context.Context, orderNum string, cfg *config.Config) (*
 	}
 
 	if response.StatusCode != http.StatusOK {
+		err := fmt.Errorf("unexpected HTTP status: %s", response.Status)
 		logger.Log.Error("HTTP request status", zap.Error(err))
 		return nil, err
 	}
 
 	body, err := io.ReadAll(response.Body)
-	defer response.Body.Close()
-
 	if err != nil {
+		logger.Log.Error("error ReadAll", zap.Error(err))
 		return nil, err
 	}
+	defer response.Body.Close()
 
 	err = json.Unmarshal(body, &order)
 	if err != nil {
