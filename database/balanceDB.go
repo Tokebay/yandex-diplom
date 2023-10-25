@@ -14,7 +14,6 @@ type UserBalanceRepository interface {
 	GetBonusBalance(ctx context.Context, userID int64) (float64, error)
 	WithdrawBalance(ctx context.Context, userID int64) (float64, error)
 	Withdraw(ctx context.Context, userID int64, orderID string, sum float64) error
-	CheckOrder(userID int64, orderID string) (bool, error)
 	GetWithdrawals(ctx context.Context, userID int64) ([]models.Withdraw, error)
 }
 
@@ -116,14 +115,4 @@ func (p *PostgreStorage) Withdraw(ctx context.Context, userID int64, orderID str
 
 	// Недостаточно баллов для списания, откатываем транзакцию
 	return ErrNotEnoughBalance
-}
-
-func (p *PostgreStorage) CheckOrder(userID int64, orderNumber string) (bool, error) {
-	var exists bool
-	err := p.db.QueryRow("SELECT EXISTS(SELECT 1 FROM orders WHERE user_id = $1 AND order_id = $2)", userID, orderNumber).Scan(&exists)
-	if err != nil {
-		logger.Log.Error("Error checking order existence", zap.Error(err))
-		return false, err
-	}
-	return exists, nil
 }

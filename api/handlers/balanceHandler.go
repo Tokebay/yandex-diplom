@@ -81,6 +81,7 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 	// Декодирование JSON-данных запроса
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&wRequest); err != nil {
+		logger.Log.Error("invalid request format", zap.Error(err))
 		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
@@ -89,6 +90,7 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 
 	// Проверка корректности номера заказа и суммы
 	if wRequest.OrderID == "" || wRequest.Sum <= 0 {
+		logger.Log.Error("invalid order number or withdrawal amount", zap.Error(err))
 		http.Error(w, "Invalid order number or withdrawal amount", http.StatusUnprocessableEntity)
 		return
 	}
@@ -102,6 +104,7 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 	err = h.balanceRepository.Withdraw(r.Context(), userID, wRequest.OrderID, wRequest.Sum)
 	if err != nil {
 		if errors.Is(err, database.ErrNotEnoughBalance) {
+			logger.Log.Error("error not enough balance", zap.Error(err))
 			w.WriteHeader(http.StatusPaymentRequired)
 			return
 		}
@@ -117,6 +120,7 @@ func (h *BalanceHandler) GetWithdrawalsHandler(w http.ResponseWriter, r *http.Re
 	// Проверка авторизации пользователя
 	userID, err := GetUserCookie(r)
 	if err != nil {
+		logger.Log.Error("Unauthorized", zap.Error(err))
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
