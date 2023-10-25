@@ -15,9 +15,9 @@ type Config struct {
 
 func NewConfig() *Config {
 	cfg := &Config{}
-	flag.StringVar(&cfg.RunAddress, "a", ":8080", "address and port to run the service")
-	flag.StringVar(&cfg.DatabaseURI, "d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "database connection URI")
-	flag.StringVar(&cfg.AccrualSystemAddr, "r", "http://localhost:9090", "address of the accrual system")
+	flag.StringVar(&cfg.RunAddress, "a", "", "address and port to run the service")
+	flag.StringVar(&cfg.DatabaseURI, "d", "", "database connection URI")
+	flag.StringVar(&cfg.AccrualSystemAddr, "r", "", "address of the accrual system")
 
 	flag.Parse()
 
