@@ -28,7 +28,7 @@ func (a *APIAccrualSystem) ScoringSystem(done chan struct{}, ctx context.Context
 		}
 
 		// делаем http GET запрос в AccrualSystem
-		orderScoring, err := GetHttpRequest(ctx, orderID, a.Config)
+		orderScoring, err := GetHTTPRequest(ctx, orderID, a.Config)
 		if err != nil {
 			logger.Log.Error("Error GET request failed to accrual system", zap.Error(err))
 			return
@@ -46,7 +46,7 @@ func (a *APIAccrualSystem) ScoringSystem(done chan struct{}, ctx context.Context
 	}
 }
 
-func GetHttpRequest(ctx context.Context, orderNum string, cfg *config.Config) (*models.ScoringSystem, error) {
+func GetHTTPRequest(ctx context.Context, orderNum string, cfg *config.Config) (*models.ScoringSystem, error) {
 	var order models.ScoringSystem
 	client := &http.Client{
 		Timeout: time.Second * 20,
