@@ -85,17 +85,19 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	// Проверка корректности номера заказа и суммы
-	if wRequest.OrderID == "" || wRequest.Sum < 0 {
-		http.Error(w, "Invalid order number or withdrawal amount", http.StatusUnprocessableEntity)
-		return
-	}
+	logger.Log.Info("Received withdrawal request", zap.String("OrderID", wRequest.OrderID), zap.Float64("Sum", wRequest.Sum))
 
-	// Проверка корректности номера заказа
-	if !isValidLuhnAlgorithm(wRequest.OrderID) {
-		http.Error(w, "Invalid order number format", http.StatusUnprocessableEntity)
-		return
-	}
+	//// Проверка корректности номера заказа и суммы
+	//if wRequest.OrderID == "" || wRequest.Sum < 0 {
+	//	http.Error(w, "Invalid order number or withdrawal amount", http.StatusUnprocessableEntity)
+	//	return
+	//}
+
+	//// Проверка корректности номера заказа
+	//if !isValidLuhnAlgorithm(wRequest.OrderID) {
+	//	http.Error(w, "Invalid order number format", http.StatusUnprocessableEntity)
+	//	return
+	//}
 
 	// проверка номера заказа
 	isOrderExist, err := h.balanceRepository.CheckOrder(userID, string(wRequest.OrderID))
