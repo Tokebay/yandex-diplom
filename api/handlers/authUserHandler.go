@@ -29,6 +29,7 @@ func NewUserHandler(userRepository database.UserRepository) *UserHandler {
 		userRepository: userRepository,
 	}
 }
+
 func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 
@@ -37,6 +38,8 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
+	// Закрываем тело запроса
+	defer r.Body.Close()
 
 	user.CreatedAt = time.Now()
 

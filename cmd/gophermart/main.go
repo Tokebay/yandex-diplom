@@ -65,21 +65,7 @@ func run() error {
 	defer cancel()
 
 	//Запускаем функцию ScoringSystem
-	ticker := time.NewTicker(time.Millisecond * 100)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				apiAccrualSystem := &accrual.APIAccrualSystem{
-					ScoringSystemHandler: app.ScoringHandler,
-					Config:               cfg,
-				}
-				apiAccrualSystem.ScoringSystem()
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
+	StartScoringSystem(ctx, app, cfg)
 
 	// Запуск HTTP сервера с контекстом
 	go func() {
@@ -114,4 +100,23 @@ func createRouter(app *App) chi.Router {
 
 	})
 	return r
+}
+
+func StartScoringSystem(ctx context.Context, app *App, cfg *config.Config) {
+
+	ticker := time.NewTicker(time.Millisecond * 100)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				apiAccrualSystem := &accrual.APIAccrualSystem{
+					ScoringSystemHandler: app.ScoringHandler,
+					Config:               cfg,
+				}
+				apiAccrualSystem.ScoringSystem()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 }
