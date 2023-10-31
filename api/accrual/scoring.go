@@ -15,7 +15,7 @@ import (
 )
 
 type APIAccrualSystem struct {
-	ScoringSystemHandler *handlers.ScoringSystemHandler
+	ScoringSystemHandler *handlers.ScoringSystem
 	Config               *config.Config
 }
 
@@ -48,7 +48,8 @@ func GetHTTPRequest(ctx context.Context, orderNum string, cfg *config.Config) (*
 		Timeout: time.Second * 30,
 	}
 	URI := cfg.AccrualSystemAddr + "/api/orders/" + orderNum
-	fmt.Printf("accrual URI %s \n", URI)
+	//fmt.Printf("accrual URI %s \n", URI)
+
 	req, err := http.NewRequestWithContext(ctx, "GET", URI, nil)
 	if err != nil {
 		logger.Log.Error("error create req", zap.Error(err))

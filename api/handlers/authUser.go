@@ -19,17 +19,17 @@ import (
 // валидация структуры запроса
 var validate = validator.New()
 
-type UserHandler struct {
+type User struct {
 	userRepo database.UserRepository
 }
 
-func NewUserHandler(repo database.UserRepository) *UserHandler {
-	return &UserHandler{
+func NewUser(repo database.UserRepository) *User {
+	return &User{
 		userRepo: repo,
 	}
 }
 
-func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (h *User) Register(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -85,7 +85,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *User) Login(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var credentials struct {

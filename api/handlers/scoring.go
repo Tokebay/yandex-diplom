@@ -8,19 +8,19 @@ import (
 	"go.uber.org/zap"
 )
 
-type ScoringSystemHandler struct {
-	scoringRepository database.ScoringRepository
+type ScoringSystem struct {
+	scoringRepo database.ScoringRepository
 }
 
-func NewScoringSystem(scoringRepository database.ScoringRepository) *ScoringSystemHandler {
-	return &ScoringSystemHandler{
-		scoringRepository: scoringRepository,
+func NewScoringSystem(repo database.ScoringRepository) *ScoringSystem {
+	return &ScoringSystem{
+		scoringRepo: repo,
 	}
 }
 
-func (h *ScoringSystemHandler) GetOrderStatus(ctx context.Context) (string, error) {
+func (h *ScoringSystem) GetOrderStatus(ctx context.Context) (string, error) {
 
-	orderID, err := h.scoringRepository.GetOrderStatus(ctx)
+	orderID, err := h.scoringRepo.GetOrderStatus(ctx)
 	if err != nil {
 
 		logger.Log.Error("Error order exist", zap.Error(err))
@@ -29,8 +29,8 @@ func (h *ScoringSystemHandler) GetOrderStatus(ctx context.Context) (string, erro
 	return orderID, nil
 }
 
-func (h *ScoringSystemHandler) UpdateOrder(ctx context.Context, order models.ScoringSystem) error {
-	err := h.scoringRepository.UpdateOrder(ctx, order)
+func (h *ScoringSystem) UpdateOrder(ctx context.Context, order models.ScoringSystem) error {
+	err := h.scoringRepo.UpdateOrder(ctx, order)
 	if err != nil {
 
 		return err

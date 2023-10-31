@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -16,17 +15,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type OrderHandler struct {
+type Order struct {
 	orderRepo database.OrderRepository
 }
 
-func NewOrderHandler(repo database.OrderRepository) *OrderHandler {
-	return &OrderHandler{
+func NewOrder(repo database.OrderRepository) *Order {
+	return &Order{
 		orderRepo: repo,
 	}
 }
 
-func (h *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
+func (h *Order) UploadOrder(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Получил userID из куки
@@ -43,7 +42,7 @@ func (h *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("orderNumber %s; userID %d \n", orderNumber, userID)
+	//fmt.Printf("orderNumber %s; userID %d \n", orderNumber, userID)
 
 	isValidOrder := isValidLuhnAlgorithm(string(orderNumber))
 	if !isValidOrder {
@@ -92,7 +91,7 @@ func (h *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetOrdersHandler Номера заказа в выдаче отсортированы по времени загрузки от самых старых к самым новым. Формат даты — RFC3339.
-func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
+func (h *Order) GetOrders(w http.ResponseWriter, r *http.Request) {
 	userID, err := GetUserCookie(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -121,7 +120,7 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	fmt.Printf("orders %s \n", ordersResp)
+	//fmt.Printf("orders %s \n", ordersResp)
 
 	// Отправка успешного ответа
 	w.Header().Set("Content-Type", "application/json")

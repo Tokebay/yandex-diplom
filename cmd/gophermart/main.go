@@ -24,10 +24,10 @@ func main() {
 }
 
 type App struct {
-	UserHandler    *handlers.UserHandler
-	OrderHandler   *handlers.OrderHandler
-	BalanceHandler *handlers.BalanceHandler
-	ScoringHandler *handlers.ScoringSystemHandler
+	UserHandler    *handlers.User
+	OrderHandler   *handlers.Order
+	BalanceHandler *handlers.Balance
+	ScoringHandler *handlers.ScoringSystem
 }
 
 func run() error {
@@ -48,9 +48,9 @@ func run() error {
 	}
 
 	// Инициализ хэндлеров с передачей соед с бд
-	userHandler := handlers.NewUserHandler(db)
-	orderHandler := handlers.NewOrderHandler(db)
-	balanceHandler := handlers.NewBalanceHandler(db)
+	userHandler := handlers.NewUser(db)
+	orderHandler := handlers.NewOrder(db)
+	balanceHandler := handlers.NewBalance(db)
 	scoringHandler := handlers.NewScoringSystem(db)
 
 	app := &App{

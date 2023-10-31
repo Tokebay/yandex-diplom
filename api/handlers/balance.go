@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/Tokebay/yandex-diplom/api/logger"
 	"github.com/Tokebay/yandex-diplom/database"
 	"github.com/Tokebay/yandex-diplom/domain/models"
@@ -12,18 +11,18 @@ import (
 	"net/http"
 )
 
-type BalanceHandler struct {
+type Balance struct {
 	balanceRepo database.UserBalanceRepository
 }
 
-func NewBalanceHandler(repo database.UserBalanceRepository) *BalanceHandler {
-	return &BalanceHandler{
+func NewBalance(repo database.UserBalanceRepository) *Balance {
+	return &Balance{
 		balanceRepo: repo,
 	}
 }
 
 // GetBalanceHandler данные о текущей сумме баллов лояльности, а также сумме использованных за весь период регистрации баллов
-func (h *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
+func (h *Balance) GetBalance(w http.ResponseWriter, r *http.Request) {
 	// Извлекаем идентификатор пользователя из контекста запроса
 	userID, err := GetUserCookie(r)
 	if err != nil {
@@ -67,7 +66,7 @@ func (h *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 }
 
 // WithdrawBalanceHandler Запрос на списание средств
-func (h *BalanceHandler) WithdrawBalance(w http.ResponseWriter, r *http.Request) {
+func (h *Balance) WithdrawBalance(w http.ResponseWriter, r *http.Request) {
 	// Проверка авторизации пользователя
 	userID, err := GetUserCookie(r)
 	if err != nil {
@@ -107,7 +106,7 @@ func (h *BalanceHandler) WithdrawBalance(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	fmt.Printf("requestSum %f; \n", wRequest.Sum)
+	//fmt.Printf("requestSum %f; \n", wRequest.Sum)
 
 	err = h.balanceRepo.Withdraw(r.Context(), userID, wRequest.OrderID, wRequest.Sum, totalWithdrawn)
 	if err != nil {
@@ -124,7 +123,7 @@ func (h *BalanceHandler) WithdrawBalance(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *BalanceHandler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
+func (h *Balance) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	// Проверка авторизации пользователя
 	userID, err := GetUserCookie(r)
 	if err != nil {
