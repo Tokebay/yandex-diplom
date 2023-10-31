@@ -13,17 +13,17 @@ import (
 )
 
 type BalanceHandler struct {
-	balanceRepository database.UserBalanceRepository
+	balanceRepo database.UserBalanceRepository
 }
 
-func NewBalanceHandler(balanceRepository database.UserBalanceRepository) *BalanceHandler {
+func NewBalanceHandler(repo database.UserBalanceRepository) *BalanceHandler {
 	return &BalanceHandler{
-		balanceRepository: balanceRepository,
+		balanceRepo: repo,
 	}
 }
 
 // GetBalanceHandler данные о текущей сумме баллов лояльности, а также сумме использованных за весь период регистрации баллов
-func (h *BalanceHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
+func (h *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	// Извлекаем идентификатор пользователя из контекста запроса
 	userID, err := GetUserCookie(r)
 	if err != nil {
@@ -32,16 +32,16 @@ func (h *BalanceHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Получаем сумму баллов лояльности
-	userTotalBonus, err := h.balanceRepository.GetBonusBalance(r.Context(), userID)
+	userTotalBonus, err := h.balanceRepo.GetBonusBalance(r.Context(), userID)
 	if err != nil {
 		logger.Log.Error("Error getting total bonuses", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	fmt.Printf("userTotalBonus %f \n", userTotalBonus)
+	//fmt.Printf("userTotalBonus %f \n", userTotalBonus)
 
 	// узнаем баланс списанных бонусов пользователя
-	totalWithdrawn, err := h.balanceRepository.WithdrawBalance(r.Context(), userID)
+	totalWithdrawn, err := h.balanceRepo.WithdrawBalance(r.Context(), userID)
 	if err != nil {
 		logger.Log.Error("Error getting total Withdrawn", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -67,7 +67,7 @@ func (h *BalanceHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Reques
 }
 
 // WithdrawBalanceHandler Запрос на списание средств
-func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.Request) {
+func (h *BalanceHandler) WithdrawBalance(w http.ResponseWriter, r *http.Request) {
 	// Проверка авторизации пользователя
 	userID, err := GetUserCookie(r)
 	if err != nil {
@@ -100,8 +100,16 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 		http.Error(w, "Invalid order number format", http.StatusUnprocessableEntity)
 		return
 	}
+	totalWithdrawn, err := h.balanceRepo.WithdrawBalance(r.Context(), userID)
+	if err != nil {
+		logger.Log.Error("Error getting total Withdrawn", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-	err = h.balanceRepository.Withdraw(r.Context(), userID, wRequest.OrderID, wRequest.Sum)
+	fmt.Printf("requestSum %f; \n", wRequest.Sum)
+
+	err = h.balanceRepo.Withdraw(r.Context(), userID, wRequest.OrderID, wRequest.Sum, totalWithdrawn)
 	if err != nil {
 		if errors.Is(err, database.ErrNotEnoughBalance) {
 			logger.Log.Error("error not enough balance", zap.Error(err))
@@ -116,7 +124,7 @@ func (h *BalanceHandler) WithdrawBalanceHandler(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *BalanceHandler) GetWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *BalanceHandler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	// Проверка авторизации пользователя
 	userID, err := GetUserCookie(r)
 	if err != nil {
@@ -126,7 +134,7 @@ func (h *BalanceHandler) GetWithdrawalsHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// Получение списка выводов средств из базы данных
-	withdrawals, err := h.balanceRepository.GetWithdrawals(r.Context(), userID)
+	withdrawals, err := h.balanceRepo.GetWithdrawals(r.Context(), userID)
 	if err != nil {
 		logger.Log.Error("Error getting withdrawals", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

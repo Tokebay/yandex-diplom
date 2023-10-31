@@ -17,18 +17,17 @@ import (
 )
 
 type OrderHandler struct {
-	orderRepository database.OrderRepository
+	orderRepo database.OrderRepository
 }
 
-func NewOrderHandler(orderRepository database.OrderRepository) *OrderHandler {
+func NewOrderHandler(repo database.OrderRepository) *OrderHandler {
 	return &OrderHandler{
-		orderRepository: orderRepository,
+		orderRepo: repo,
 	}
 }
 
-func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) UploadOrder(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	fmt.Println("UploadOrderHandler")
 
 	// Получил userID из куки
 	userID, err := GetUserCookie(r)
@@ -53,7 +52,7 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// был ли номер заказа уже загружен этим пользователем
-	isOrderExist, err := h.orderRepository.OrderExists(userID, string(orderNumber))
+	isOrderExist, err := h.orderRepo.OrderExists(userID, string(orderNumber))
 	if err != nil {
 		logger.Log.Error("Error order exist", zap.Error(err))
 	}
@@ -64,7 +63,7 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Проверю что номер заказа не был загружен другим пользователем
-	isOrderUploaded, err := h.orderRepository.OrderExistsByNumber(string(orderNumber))
+	isOrderUploaded, err := h.orderRepo.OrderExistsByNumber(string(orderNumber))
 	if err != nil {
 		logger.Log.Error("Error order uploaded by another", zap.Error(err))
 	}
@@ -82,7 +81,7 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Сохраняю номера заказа в БД со статусом  - NEW
-	err = h.orderRepository.UploadOrder(order)
+	err = h.orderRepo.UploadOrder(order)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -93,9 +92,7 @@ func (h *OrderHandler) UploadOrderHandler(w http.ResponseWriter, r *http.Request
 }
 
 // GetOrdersHandler Номера заказа в выдаче отсортированы по времени загрузки от самых старых к самым новым. Формат даты — RFC3339.
-func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("GetOrdersHandler")
-
+func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	userID, err := GetUserCookie(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -106,7 +103,7 @@ func (h *OrderHandler) GetOrdersHandler(w http.ResponseWriter, r *http.Request) 
 	defer cancel()
 
 	//Получение списка заказов для пользователя из базы данных
-	orders, err := h.orderRepository.GetOrdersByUserID(ctx, userID)
+	orders, err := h.orderRepo.GetOrdersByUserID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, database.ErrDataNotFound) {
 			w.WriteHeader(http.StatusNoContent)

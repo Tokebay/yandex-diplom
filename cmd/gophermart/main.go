@@ -89,14 +89,14 @@ func createRouter(app *App) chi.Router {
 	r.Group(func(r chi.Router) {
 		// Middleware для логирования запросов
 
-		r.Post("/api/user/register", app.UserHandler.RegisterHandler)
-		r.Post("/api/user/login", app.UserHandler.LoginHandler)
+		r.Post("/api/user/register", app.UserHandler.Register)
+		r.Post("/api/user/login", app.UserHandler.Login)
 
-		r.With(middleware.AuthMiddleware).Post("/api/user/orders", app.OrderHandler.UploadOrderHandler)
-		r.With(middleware.AuthMiddleware).Get("/api/user/orders", app.OrderHandler.GetOrdersHandler)
-		r.With(middleware.AuthMiddleware).Get("/api/user/balance", app.BalanceHandler.GetBalanceHandler)
-		r.With(middleware.AuthMiddleware).Post("/api/user/balance/withdraw", app.BalanceHandler.WithdrawBalanceHandler)
-		r.With(middleware.AuthMiddleware).Get("/api/user/withdrawals", app.BalanceHandler.GetWithdrawalsHandler)
+		r.With(middleware.AuthMiddleware).Post("/api/user/orders", app.OrderHandler.UploadOrder)
+		r.With(middleware.AuthMiddleware).Get("/api/user/orders", app.OrderHandler.GetOrders)
+		r.With(middleware.AuthMiddleware).Get("/api/user/balance", app.BalanceHandler.GetBalance)
+		r.With(middleware.AuthMiddleware).Post("/api/user/balance/withdraw", app.BalanceHandler.WithdrawBalance)
+		r.With(middleware.AuthMiddleware).Get("/api/user/withdrawals", app.BalanceHandler.GetWithdrawals)
 
 	})
 	return r

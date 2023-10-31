@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -21,16 +20,16 @@ import (
 var validate = validator.New()
 
 type UserHandler struct {
-	userRepository database.UserRepository
+	userRepo database.UserRepository
 }
 
-func NewUserHandler(userRepository database.UserRepository) *UserHandler {
+func NewUserHandler(repo database.UserRepository) *UserHandler {
 	return &UserHandler{
-		userRepository: userRepository,
+		userRepo: repo,
 	}
 }
 
-func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -53,7 +52,7 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	user.Password = getHash([]byte(user.Password))
 
 	// Создаем пользователя в репозитории
-	login, userID, err := h.userRepository.CreateUser(user)
+	login, userID, err := h.userRepo.CreateUser(user)
 	if err != nil && login == "" {
 		w.WriteHeader(http.StatusConflict)
 		return
@@ -86,7 +85,7 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var credentials struct {
@@ -110,7 +109,7 @@ func (h *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Проверка логина и пароля в БД
-	user, err := h.userRepository.GetUser(credentials.Login)
+	user, err := h.userRepo.GetUser(credentials.Login)
 	if err != nil {
 		if errors.Is(err, database.ErrUserNotFound) {
 			logger.Log.Error("Error finding user", zap.Error(err))
@@ -136,7 +135,7 @@ func (h *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var token string
 	if userID == -1 {
 		token, err = BuildJWTString(user.ID)
-		fmt.Printf("RegisterHandler userID %d", user.ID)
+
 		if err != nil {
 			http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 			return
